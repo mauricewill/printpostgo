@@ -620,7 +620,6 @@
             <div>
                 <h4 class="text-white font-bold mb-4">Contact</h4>
                 <p class="text-sm">support@printpostgo.com</p>
-                <p class="text-sm">1-800-MAIL-NOW</p>
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-xs text-center">
@@ -1153,6 +1152,36 @@
             fileInput.files = files; 
             if(window.handleFileSelect) window.handleFileSelect(fileInput);
         }
+
+        // --- Modal Logic (Restored) ---
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            // Small timeout to allow the browser to register the class removal before animating opacity
+            setTimeout(() => {
+                document.getElementById(id + '-backdrop').classList.remove('opacity-0');
+                document.getElementById(id + '-panel').classList.remove('opacity-0', 'scale-95');
+                document.getElementById(id + '-panel').classList.add('opacity-100', 'scale-100');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id + '-backdrop').classList.add('opacity-0');
+            document.getElementById(id + '-panel').classList.remove('opacity-100', 'scale-100');
+            document.getElementById(id + '-panel').classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                document.getElementById(id).classList.add('hidden');
+            }, 300); // Matches default transition duration
+        }
+
+        // Explicitly attach to window so inline onclick handlers work
+        window.openPrivacyModal = (e) => { if(e) e.preventDefault(); openModal('privacy-modal'); };
+        window.closePrivacyModal = () => closeModal('privacy-modal');
+        
+        window.openTermsModal = (e) => { if(e) e.preventDefault(); openModal('terms-modal'); };
+        window.closeTermsModal = () => closeModal('terms-modal');
+        
+        window.openContactModal = (e) => { if(e) e.preventDefault(); openModal('contact-modal'); };
+        window.closeContactModal = () => closeModal('contact-modal');
     </script>
 </body>
 </html>
