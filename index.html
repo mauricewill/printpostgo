@@ -630,12 +630,12 @@
     <!-- Privacy Policy Modal -->
     <div id="privacy-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <!-- Backdrop -->
-        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="privacy-backdrop" onclick="closePrivacyModal()"></div>
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="privacy-modal-backdrop" onclick="closePrivacyModal()"></div>
     
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
             <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0 pointer-events-auto">
                 <!-- Modal Panel -->
-                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl opacity-0 scale-95" id="privacy-panel">
+                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl opacity-0 scale-95" id="privacy-modal-panel">
                     
                     <!-- Header -->
                     <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
@@ -679,7 +679,7 @@
                         </ul>
     
                         <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">6. Contact Us</h4>
-                        <p>If you have questions about this policy, please contact us at <a href="mailto:privacy@printpostgo.com" class="text-brand-800 underline">privacy@printpostgo.com</a>.</p>
+                        <p>If you have questions about this policy, please contact us at <a href="mailto:support@printpostgo.com" class="text-brand-800 underline">support@printpostgo.com</a>.</p>
                     </div>
     
                     <!-- Footer -->
@@ -694,12 +694,12 @@
     <!-- Terms of Service Modal -->
     <div id="terms-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="terms-modal-title" role="dialog" aria-modal="true">
         <!-- Backdrop -->
-        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="terms-backdrop" onclick="closeTermsModal()"></div>
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="terms-modal-backdrop" onclick="closeTermsModal()"></div>
     
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
             <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0 pointer-events-auto">
                 <!-- Modal Panel -->
-                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl opacity-0 scale-95" id="terms-panel">
+                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl opacity-0 scale-95" id="terms-modal-panel">
                     
                     <!-- Header -->
                     <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
@@ -751,12 +751,12 @@
     <!-- Contact Support Modal -->
     <div id="contact-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="contact-modal-title" role="dialog" aria-modal="true">
         <!-- Backdrop -->
-        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="contact-backdrop" onclick="closeContactModal()"></div>
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="contact-modal-backdrop" onclick="closeContactModal()"></div>
     
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
             <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0 pointer-events-auto">
                 <!-- Modal Panel -->
-                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl opacity-0 scale-95" id="contact-panel">
+                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl opacity-0 scale-95" id="contact-modal-panel">
                     
                     <!-- Header -->
                     <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
@@ -1078,6 +1078,36 @@
 
     <!-- Global State & Non-Module Helpers -->
     <script>
+        // --- Modal Logic (Prioritized) ---
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            // Small timeout to allow the browser to register the class removal before animating opacity
+            setTimeout(() => {
+                document.getElementById(id + '-backdrop').classList.remove('opacity-0');
+                document.getElementById(id + '-panel').classList.remove('opacity-0', 'scale-95');
+                document.getElementById(id + '-panel').classList.add('opacity-100', 'scale-100');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id + '-backdrop').classList.add('opacity-0');
+            document.getElementById(id + '-panel').classList.remove('opacity-100', 'scale-100');
+            document.getElementById(id + '-panel').classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                document.getElementById(id).classList.add('hidden');
+            }, 300); // Matches default transition duration
+        }
+
+        // Explicitly attach to window so inline onclick handlers work
+        window.openPrivacyModal = (e) => { if(e) e.preventDefault(); openModal('privacy-modal'); };
+        window.closePrivacyModal = () => closeModal('privacy-modal');
+        
+        window.openTermsModal = (e) => { if(e) e.preventDefault(); openModal('terms-modal'); };
+        window.closeTermsModal = () => closeModal('terms-modal');
+        
+        window.openContactModal = (e) => { if(e) e.preventDefault(); openModal('contact-modal'); };
+        window.closeContactModal = () => closeModal('contact-modal');
+    
         // Setup PDF.js worker (Global scope)
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -1152,36 +1182,6 @@
             fileInput.files = files; 
             if(window.handleFileSelect) window.handleFileSelect(fileInput);
         }
-
-        // --- Modal Logic (Restored) ---
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-            // Small timeout to allow the browser to register the class removal before animating opacity
-            setTimeout(() => {
-                document.getElementById(id + '-backdrop').classList.remove('opacity-0');
-                document.getElementById(id + '-panel').classList.remove('opacity-0', 'scale-95');
-                document.getElementById(id + '-panel').classList.add('opacity-100', 'scale-100');
-            }, 10);
-        }
-
-        function closeModal(id) {
-            document.getElementById(id + '-backdrop').classList.add('opacity-0');
-            document.getElementById(id + '-panel').classList.remove('opacity-100', 'scale-100');
-            document.getElementById(id + '-panel').classList.add('opacity-0', 'scale-95');
-            setTimeout(() => {
-                document.getElementById(id).classList.add('hidden');
-            }, 300); // Matches default transition duration
-        }
-
-        // Explicitly attach to window so inline onclick handlers work
-        window.openPrivacyModal = (e) => { if(e) e.preventDefault(); openModal('privacy-modal'); };
-        window.closePrivacyModal = () => closeModal('privacy-modal');
-        
-        window.openTermsModal = (e) => { if(e) e.preventDefault(); openModal('terms-modal'); };
-        window.closeTermsModal = () => closeModal('terms-modal');
-        
-        window.openContactModal = (e) => { if(e) e.preventDefault(); openModal('contact-modal'); };
-        window.closeContactModal = () => closeModal('contact-modal');
     </script>
 </body>
 </html>
