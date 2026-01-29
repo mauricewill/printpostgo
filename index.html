@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintPostGo | Print & Mail Services for Everyone</title>
+    
+    <!-- Favicon: Brand Blue Square with White Paper Plane -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%231e40af'/%3E%3Cpath fill='white' transform='scale(0.6) translate(170, 170)' d='M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 493.2 160 480V396.4c0-4 1.5-7.8 4.2-10.7l167.6-182.9c5.8-6.3 5.6-16-.4-22s-16.1-6.1-22 .4L147.7 356H48c-12.7 0-23.7-8.3-27.1-20.5s4-24.8 14.8-30.7l439.4-240c9.9-5.4 22-3.8 30.6 3.1z'/%3E%3C/svg%3E" type="image/svg+xml">
+
+    <!-- Fonts: Space Grotesk (Headers) & Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- PDF.js for Page Counting & Rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <!-- Stripe JS (Frontend Library) -->
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af', // Primary Brand Color
+                            900: '#1e3a8a',
+                        },
+                        stripe: {
+                            blurple: '#635BFF',
+                            hover: '#5851DF',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        header: ['Space Grotesk', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Space Grotesk', sans-serif; }
+        
+        .hero-pattern {
+            background-color: #ffffff;
+            background-image: radial-gradient(#1e40af 0.5px, transparent 0.5px), radial-gradient(#1e40af 0.5px, #ffffff 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            opacity: 0.03;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #1e40af;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* PDF Canvas Style */
+        #pdf-preview { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+    </style>
+</head>
+<body class="text-slate-800 bg-white pb-24 md:pb-0">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
+                    <div class="w-8 h-8 bg-brand-800 rounded flex items-center justify-center text-white">
+                        <i class="fa-solid fa-paper-plane text-sm"></i>
+                    </div>
+                    <span class="font-header font-bold text-xl tracking-tight text-slate-900">PrintPostGo</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#how-it-works" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">How It Works</a>
+                    <a href="#pricing" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">Pricing</a>
+                    <a href="#start-order" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">Order Now</a>
+                </div>
+                <div>
+                    <a href="#start-order" class="bg-brand-800 hover:bg-brand-900 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-brand-800/20 text-sm">
+                        Start Order
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-24 overflow-hidden">
+        <div class="absolute inset-0 hero-pattern z-0"></div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-800 text-xs font-semibold mb-6 border border-brand-100">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                Simple. Secure. Fast.
+            </div>
+            <!-- ACTION ORIENTED HEADLINE -->
+            <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-6">
+                Mail PDF Letters directly<br> from your <span class="text-brand-800">browser.</span>
+            </h1>
+            <p class="mt-4 text-xl text-slate-600 max-w-2xl mx-auto font-light leading-relaxed">
+                Streamline your mail. Whether you are sending a single letter or a thousand invoices, we securely print and mail it for you. Perfect for businesses and individuals.
+            </p>
+            <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#start-order" class="bg-brand-800 hover:bg-brand-900 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-brand-800/20 flex items-center justify-center gap-2 transform hover:-translate-y-1">
+                    Start Your Order <i class="fa-solid fa-arrow-right text-sm"></i>
+                </a>
+                <a href="#how-it-works" class="bg-white border border-slate-200 hover:border-brand-300 hover:bg-slate-50 text-slate-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all flex items-center justify-center">
+                    See Pricing
+                </a>
+            </div>
+            
+            <!-- Trust Indicators -->
+            <div class="mt-12 flex items-center justify-center gap-6 md:gap-12 grayscale opacity-60">
+                <div class="flex items-center gap-2"><i class="fa-solid fa-lock text-brand-800"></i><span class="font-bold text-sm">Confidential & Secure</span></div>
+                <div class="flex items-center gap-2"><i class="fa-solid fa-building-columns text-brand-800"></i><span class="font-bold text-sm">Professional Quality</span></div>
+                <div class="flex items-center gap-2"><i class="fa-brands fa-stripe text-brand-800"></i><span class="font-bold text-sm">Stripe Payments</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section class="py-16 bg-white border-b border-slate-100" id="how-it-works">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10">
+                <span class="text-brand-800 font-semibold text-sm tracking-wide uppercase">Why Use PrintPostGo</span>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors">
+                    <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <h3 class="font-bold text-xl text-slate-900 mb-3">Legal & Professional</h3>
+                    <p class="text-slate-600">Send certified notices, contracts, and important documents with strict confidentiality. No more manual collation.</p>
+                </div>
+                <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors">
+                    <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <h3 class="font-bold text-xl text-slate-900 mb-3">Small Business</h3>
+                    <p class="text-slate-600">Accelerate accounts receivable. Send invoices and monthly statements to clients without buying stamps or envelopes.</p>
+                </div>
+                <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors">
+                    <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-house-user"></i>
+                    </div>
+                    <h3 class="font-bold text-xl text-slate-900 mb-3">Personal & Home Office</h3>
+                    <p class="text-slate-600">Skip the trip to the post office. Easily mail tax forms, letters, or administrative documents from the comfort of home.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="py-20 bg-slate-50 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">Trusted by Professionals</h2>
+                <p class="text-slate-600">Join thousands of businesses and individuals who have switched to digital mailing.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Review 1 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex text-yellow-400 mb-4 text-sm">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 mb-6 italic">"I used to spend Friday afternoons stuffing envelopes for invoices. Now I just upload a PDF and I'm done in 2 minutes. Game changer."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">SJ</div>
+                        <div>
+                            <p class="font-bold text-slate-900 text-sm">Sarah Jenkins</p>
+                            <p class="text-xs text-slate-500">Small Business Owner</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Review 2 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex text-yellow-400 mb-4 text-sm">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 mb-6 italic">"Needed to send a certified letter but couldn't get to the post office before work. PrintPostGo handled it perfectly with tracking."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">MR</div>
+                        <div>
+                            <p class="font-bold text-slate-900 text-sm">Michael Ross</p>
+                            <p class="text-xs text-slate-500">Freelancer</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Review 3 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex text-yellow-400 mb-4 text-sm">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 mb-6 italic">"The interface is incredibly simple. I was skeptical about the privacy at first, but the security measures are transparent and solid."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">DT</div>
+                        <div>
+                            <p class="font-bold text-slate-900 text-sm">David Thompson</p>
+                            <p class="text-xs text-slate-500">Real Estate Agent</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Grid (Changed background to white for banding effect) -->
+    <section id="pricing" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h2>
+                <p class="text-slate-600">Pay as you go. No subscriptions.</p>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100">
+                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm">
+                                <i class="fa-solid fa-print"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">Printing Costs</h4>
+                                <p class="text-sm text-slate-500">B&W: $0.30/page | Color: $0.85/page</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100">
+                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm">
+                                <i class="fa-solid fa-envelope"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">Economy (No Tracking)</h4>
+                                <p class="text-sm text-slate-500">$4.00 Shipping • Up to 10 pages</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100">
+                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm">
+                                <i class="fa-solid fa-truck-fast"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">Priority (With Tracking)</h4>
+                                <p class="text-sm text-slate-500">$19.00 Shipping • 1-40 pages • Tracking Included</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg">
+                    <h3 class="font-header font-bold text-xl mb-6">Quick Estimator</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-3 border-b border-slate-100">
+                            <span class="text-slate-600 text-sm">1 Page (B&W) - Economy</span>
+                            <span class="font-bold text-slate-900">$5.30</span>
+                        </div>
+                        <div class="flex justify-between items-center py-3 border-b border-slate-100">
+                            <span class="text-slate-600 text-sm">5 Pages (Color) - Economy</span>
+                            <span class="font-bold text-slate-900">$9.25</span>
+                        </div>
+                        <div class="flex justify-between items-center py-3">
+                            <span class="text-slate-600 text-sm">20 Pages (B&W) - Priority</span>
+                            <span class="font-bold text-slate-900">$26.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Order Form Section -->
+    <section id="start-order" class="py-24 bg-slate-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Progress Stepper -->
+            <div class="flex justify-between items-center max-w-2xl mx-auto mb-12 text-sm font-medium text-slate-400 relative">
+                <div class="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -z-10"></div>
+                <div class="flex items-center gap-2 bg-slate-50 pr-4 text-brand-800">
+                    <span class="w-6 h-6 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs">1</span> Upload
+                </div>
+                <div class="flex items-center gap-2 bg-slate-50 px-4">
+                    <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs">2</span> Address
+                </div>
+                <div class="flex items-center gap-2 bg-slate-50 pl-4">
+                    <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs">3</span> Pay
+                </div>
+            </div>
+
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Configure Your Order</h2>
+                <p class="text-slate-600 mt-2">Upload your PDF to calculate accurate pricing for Stripe Checkout.</p>
+            </div>
+
+            <!-- Form Container -->
+            <form id="orderForm" class="grid lg:grid-cols-3 gap-8" onsubmit="handleFormSubmit(event)">
+                
+                <!-- Left Column: Inputs -->
+                <div class="lg:col-span-2 space-y-8">
+                    
+                    <!-- 1. Document Upload (Updated with Preview) -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
+                            <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 1</span> Upload Document
+                        </h3>
+                        
+                        <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:bg-slate-50 transition-colors cursor-pointer relative bg-slate-50/50">
+                            <input type="file" id="file-upload" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="application/pdf" onchange="handleFileSelect(this)">
+                            
+                            <!-- Prompt State -->
+                            <div id="upload-prompt">
+                                <div class="w-12 h-12 bg-blue-100 text-brand-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                                </div>
+                                <p class="text-sm font-medium text-slate-900">Click or drag PDF to upload</p>
+                                <p class="text-xs text-slate-500 mt-1">PDF only. Max size 25MB.</p>
+                            </div>
+
+                            <!-- Success/Preview State -->
+                            <div id="file-info" class="hidden">
+                                <div class="flex flex-col items-center">
+                                    <canvas id="pdf-preview" class="mb-4 border border-slate-200 rounded shadow-sm max-h-48 w-auto bg-white"></canvas>
+                                    <div class="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold mb-2">
+                                        <i class="fa-solid fa-check"></i> <span id="page-count-display">0 Pages detected</span>
+                                    </div>
+                                    <p id="filename-display" class="text-sm font-medium text-slate-900 truncate max-w-xs"></p>
+                                    <button type="button" class="text-xs text-red-500 underline mt-2 hover:text-red-600" onclick="resetFile()">Remove & Upload Different File</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Security Micro-copy -->
+                        <div class="mt-3 flex items-center justify-center gap-2 text-[10px] text-slate-400">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            Files are 256-bit encrypted and auto-deleted after 7 days.
+                        </div>
+                        
+                        <p id="upload-error" class="text-red-600 text-xs mt-2 hidden text-center"><i class="fa-solid fa-circle-exclamation"></i> Please upload a valid PDF file.</p>
+                    </div>
+
+                    <!-- 2. Addresses -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="font-header font-bold text-lg mb-6 flex items-center gap-2">
+                            <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 2</span> Addressing
+                        </h3>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Sender -->
+                            <div class="space-y-6 bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center gap-2">
+                                    <i class="fa-solid fa-user text-slate-400"></i> Sender (You)
+                                </h4>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                                    <input type="text" name="senderName" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Email Address <span class="text-red-500">*</span></label>
+                                    <input type="email" name="senderEmail" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                </div>
+                                
+                                <!-- Sender Address Breakdown -->
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
+                                    <input type="text" name="senderStreet" required placeholder="123 Main St" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
+                                    <input type="text" name="senderCity" required placeholder="New York" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
+                                        <input type="text" name="senderState" required placeholder="NY" maxlength="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Zip <span class="text-red-500">*</span></label>
+                                        <input type="text" name="senderZip" required placeholder="10001" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recipient -->
+                            <div class="space-y-6 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
+                                <h4 class="text-sm font-semibold text-brand-800 uppercase tracking-wider border-b border-blue-200 pb-2 flex items-center gap-2">
+                                    <i class="fa-solid fa-location-dot text-brand-600"></i> Recipient
+                                </h4>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Recipient Name <span class="text-red-500">*</span></label>
+                                    <input type="text" name="recipientName" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                </div>
+                                
+                                <!-- Invisible Spacer for Alignment (Matches Email Field Height) -->
+                                <div class="hidden md:block opacity-0 pointer-events-none select-none">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Spacer</label>
+                                    <input type="text" class="w-full rounded-lg border-slate-300 px-4 py-3 border text-base" disabled>
+                                </div>
+
+                                <!-- Recipient Address Breakdown -->
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
+                                    <input type="text" name="recipientStreet" required placeholder="456 Elm Ave" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
+                                    <input type="text" name="recipientCity" required placeholder="Los Angeles" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
+                                        <input type="text" name="recipientState" required placeholder="CA" maxlength="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Zip <span class="text-red-500">*</span></label>
+                                        <input type="text" name="recipientZip" required placeholder="90001" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Configuration (Renamed Options) -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
+                            <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 3</span> Print & Mail Options
+                        </h3>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Left Column: Print Settings -->
+                            <div class="space-y-6">
+                                <!-- Print Color -->
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-3">Print Color</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <label class="cursor-pointer relative">
+                                            <input type="radio" name="printType" value="bw" checked class="peer sr-only" onchange="calculateTotal()">
+                                            <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
+                                                <i class="fa-solid fa-file-lines mb-1 block"></i>
+                                                <span class="text-sm font-semibold">Black & White</span>
+                                                <span class="block text-xs text-slate-500">$0.30/page</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer relative">
+                                            <input type="radio" name="printType" value="color" class="peer sr-only" onchange="calculateTotal()">
+                                            <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
+                                                <i class="fa-solid fa-palette mb-1 block text-pink-500"></i>
+                                                <span class="text-sm font-semibold">Full Color</span>
+                                                <span class="block text-xs text-slate-500">$0.85/page</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Paper Size (NEW) -->
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-3">Paper Size</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <label class="cursor-pointer relative">
+                                            <input type="radio" name="paperSize" value="letter" checked class="peer sr-only" onchange="calculateTotal()">
+                                            <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
+                                                <span class="text-sm font-semibold block">Letter (8.5x11)</span>
+                                                <span class="block text-xs text-slate-500">Standard</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer relative">
+                                            <input type="radio" name="paperSize" value="legal" class="peer sr-only" onchange="calculateTotal()">
+                                            <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
+                                                <span class="text-sm font-semibold block">Legal (8.5x14)</span>
+                                                <span class="block text-xs text-slate-500">+$0.10/page</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: Envelope Type (Renamed & Date Logic) -->
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-3">Mailing Speed</label>
+                                <div class="space-y-3">
+                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 transition-all" id="label-standard">
+                                        <input type="radio" name="mailType" value="standard" checked class="mt-1 mr-3 text-brand-600 focus:ring-brand-500" onchange="calculateTotal()">
+                                        <div>
+                                            <span class="block text-sm font-semibold text-slate-900">Economy (No Tracking)</span>
+                                            <span class="block text-xs text-slate-500">Up to 10 pages • $4.00</span>
+                                            <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-standard">Est. Arrival: ...</span>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 transition-all" id="label-large">
+                                        <input type="radio" name="mailType" value="large" class="mt-1 mr-3 text-brand-600 focus:ring-brand-500" onchange="calculateTotal()">
+                                        <div>
+                                            <span class="block text-sm font-semibold text-slate-900">Priority (With Tracking)</span>
+                                            <span class="block text-xs text-slate-500">1-40 pages • $19.00</span>
+                                            <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-priority">Est. Arrival: ...</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <p id="envelope-warning" class="text-xs text-amber-600 mt-2 hidden"><i class="fa-solid fa-triangle-exclamation"></i> Documents over 10 pages must use Priority Mail.</p>
+                            </div>
+                        </div>
+
+                        <!-- Operational Notice -->
+                        <div class="mt-6 pt-6 border-t border-slate-100 flex items-start gap-3">
+                            <i class="fa-solid fa-circle-info text-brand-600 mt-1"></i>
+                            <p class="text-sm text-slate-600">Orders submitted before <span class="font-bold text-slate-900">2:00 PM EST</span> are processed the same business day.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Sticky Summary -->
+                <div class="lg:col-span-1">
+                    <div class="sticky top-24">
+                        <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+                            <div class="bg-[#635BFF] px-6 py-4 flex justify-between items-center">
+                                <h3 class="text-white font-header font-bold text-lg">Checkout</h3>
+                                <div class="bg-white/20 px-2 py-1 rounded text-white text-xs font-semibold backdrop-blur-sm">
+                                    <i class="fa-brands fa-stripe"></i> SECURE
+                                </div>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <!-- Dynamic Line Items -->
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-600">Pages (<span id="summary-page-count">0</span>)</span>
+                                    <span class="font-medium text-slate-900" id="summary-print-cost">$0.00</span>
+                                </div>
+                                <div class="flex justify-between text-sm" id="legal-surcharge-row">
+                                    <span class="text-slate-600">Legal Size Surcharge</span>
+                                    <span class="font-medium text-slate-900" id="summary-legal-cost">$0.00</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-600">Service Fee</span>
+                                    <span class="font-medium text-slate-900">$1.00</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-600">Shipping</span>
+                                    <span class="font-medium text-slate-900" id="summary-shipping-cost">$4.00</span>
+                                </div>
+                                
+                                <div class="pt-4 border-t border-slate-100 mt-4">
+                                    <div class="flex justify-between items-end">
+                                        <span class="text-slate-600 font-medium">Total Due</span>
+                                        <span class="text-3xl font-bold text-slate-900" id="final-total">$0.00</span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 text-right mt-1">Processed securely by Stripe</p>
+                                </div>
+
+                                <button type="submit" id="submit-btn" class="w-full bg-[#635BFF] hover:bg-[#5851DF] text-white font-bold py-4 rounded-lg shadow-lg shadow-[#635BFF]/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span>Proceed to Payment</span>
+                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                </button>
+                                
+                                <!-- Delivery Guarantee -->
+                                <p class="text-xs text-center text-slate-500 mt-3 border-t border-slate-100 pt-3">
+                                    <i class="fa-solid fa-shield-cat text-brand-600"></i> 100% Delivery Guarantee. If USPS loses it, we reprint & resend for free.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Loading State overlay -->
+            <div id="loading-overlay" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
+                 <div class="loader w-12 h-12 mb-4 border-t-[#635BFF]"></div>
+                 <h3 class="text-xl font-bold text-slate-900">Redirecting to Stripe...</h3>
+                 <p class="text-slate-500 mt-2">Creating secure checkout session</p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Mobile Sticky Footer Summary -->
+    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 md:hidden z-40 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <div>
+            <p class="text-xs text-slate-500">Total</p>
+            <p class="text-xl font-bold text-slate-900" id="mobile-total">$0.00</p>
+        </div>
+        <button onclick="document.getElementById('submit-btn').click()" class="bg-[#635BFF] text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-brand-500/30">
+            Checkout <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-8">
+            <div class="col-span-1 md:col-span-2">
+                <div class="flex items-center gap-2 text-white mb-4">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span class="font-header font-bold text-xl">PrintPostGo</span>
+                </div>
+                <p class="max-w-xs text-sm">Professional document mailing services for businesses and individuals. Secure, fast, and reliable.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4">Links</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="#" onclick="openPrivacyModal(event)" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                    <li><a href="#" onclick="openTermsModal(event)" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    <li><a href="#" onclick="openContactModal(event)" class="hover:text-white transition-colors">Contact Support</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4">Contact</h4>
+                <p class="text-sm">support@printpostgo.com</p>
+                <p class="text-sm">1-800-MAIL-NOW</p>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-xs text-center">
+            &copy; 2026 PrintPostGo Services. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacy-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="privacy-backdrop" onclick="closePrivacyModal()"></div>
+    
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0 pointer-events-auto">
+                <!-- Modal Panel -->
+                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl opacity-0 scale-95" id="privacy-panel">
+                    
+                    <!-- Header -->
+                    <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
+                        <h3 class="text-xl font-header font-bold text-slate-900" id="modal-title">Privacy Policy</h3>
+                        <button type="button" onclick="closePrivacyModal()" class="text-slate-400 hover:text-slate-500 focus:outline-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-50 transition-colors">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+    
+                    <!-- Content -->
+                    <div class="px-6 py-6 max-h-[70vh] overflow-y-auto prose prose-slate prose-sm max-w-none">
+                        <p class="text-slate-500 mb-6 text-xs">Last Updated: January 26, 2026</p>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mb-2">1. Introduction</h4>
+                        <p>At PrintPostGo ("we", "our", or "us"), we prioritize the privacy and security of your documents. This Privacy Policy outlines how we collect, use, and protect your information when you use our print-and-mail services.</p>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">2. Information We Collect</h4>
+                        <ul class="list-disc pl-5 space-y-1 text-slate-700">
+                            <li><strong>Uploaded Documents:</strong> PDF files you upload are strictly used for printing and mailing purposes. They are automatically deleted from our servers 7 days after successful fulfillment.</li>
+                            <li><strong>Mailing Addresses:</strong> Sender and recipient addresses provided for the delivery of your mail.</li>
+                            <li><strong>Payment Information:</strong> We do not store credit card details. All payments are processed securely via Stripe.</li>
+                            <li><strong>Contact Information:</strong> Your name and email address for order confirmations and customer support.</li>
+                        </ul>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">3. How We Use Your Information</h4>
+                        <p>We use your information solely to:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-slate-700">
+                            <li>Process and fulfill your print and mail orders.</li>
+                            <li>Communicate with you regarding order status or issues.</li>
+                            <li>Comply with legal obligations (e.g., USPS regulations).</li>
+                        </ul>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">4. Data Security</h4>
+                        <p>We implement industry-standard security measures, including 256-bit SSL encryption for data transmission. Access to uploaded documents is restricted to automated systems and essential personnel required for fulfillment.</p>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">5. Third-Party Services</h4>
+                        <p>We share necessary data with the following partners to provide our service:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-slate-700">
+                            <li><strong>Stripe:</strong> For secure payment processing.</li>
+                            <li><strong>USPS (United States Postal Service):</strong> For physical mail delivery.</li>
+                        </ul>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">6. Contact Us</h4>
+                        <p>If you have questions about this policy, please contact us at <a href="mailto:privacy@printpostgo.com" class="text-brand-800 underline">privacy@printpostgo.com</a>.</p>
+                    </div>
+    
+                    <!-- Footer -->
+                    <div class="bg-slate-50 px-6 py-4 flex flex-row-reverse border-t border-slate-100">
+                        <button type="button" class="inline-flex w-full justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors sm:ml-3 sm:w-auto" onclick="closePrivacyModal()">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div id="terms-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="terms-modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="terms-backdrop" onclick="closeTermsModal()"></div>
+    
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0 pointer-events-auto">
+                <!-- Modal Panel -->
+                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl opacity-0 scale-95" id="terms-panel">
+                    
+                    <!-- Header -->
+                    <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
+                        <h3 class="text-xl font-header font-bold text-slate-900" id="terms-modal-title">Terms of Service</h3>
+                        <button type="button" onclick="closeTermsModal()" class="text-slate-400 hover:text-slate-500 focus:outline-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-50 transition-colors">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+    
+                    <!-- Content -->
+                    <div class="px-6 py-6 max-h-[70vh] overflow-y-auto prose prose-slate prose-sm max-w-none">
+                        <p class="text-slate-500 mb-6 text-xs">Last Updated: January 26, 2026</p>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mb-2">1. Acceptance of Terms</h4>
+                        <p>By using PrintPostGo to upload, print, and mail documents, you agree to these Terms of Service. If you do not agree, please do not use our services.</p>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">2. Prohibited Content</h4>
+                        <p>You are strictly prohibited from using our service to mail content that is:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-slate-700">
+                            <li>Illegal, threatening, harassing, or libelous.</li>
+                            <li>Fraudulent or part of a scam/phishing operation.</li>
+                            <li>Obscene or pornographic.</li>
+                            <li>In violation of USPS regulations or federal law.</li>
+                        </ul>
+                        <p class="mt-2 text-red-600 font-medium italic">We reserve the right to refuse service and report illegal content to law enforcement.</p>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">3. Payments and Refunds</h4>
+                        <p><strong>Payments:</strong> Full payment is required before printing begins. Prices are calculated based on page count and shipping selection.</p>
+                        <p class="mt-2"><strong>Refunds:</strong> Due to the custom nature of printing:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-slate-700">
+                            <li><strong>Before Processing:</strong> You may cancel for a full refund if the order has not yet been printed (typically within 1 hour of submission).</li>
+                            <li><strong>After Processing:</strong> No refunds are issued once printing has started.</li>
+                            <li><strong>Delivery Errors:</strong> We are not responsible for delays caused by USPS or incorrect addresses provided by the user.</li>
+                        </ul>
+    
+                        <h4 class="text-lg font-bold text-slate-900 mt-6 mb-2">4. Limitation of Liability</h4>
+                        <p>PrintPostGo is a fulfillment service. We are not responsible for the content of your mail. Our liability is limited to the cost of the service paid by you.</p>
+                    </div>
+    
+                    <!-- Footer -->
+                    <div class="bg-slate-50 px-6 py-4 flex flex-row-reverse border-t border-slate-100">
+                        <button type="button" class="inline-flex w-full justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors sm:ml-3 sm:w-auto" onclick="closeTermsModal()">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Support Modal -->
+    <div id="contact-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="contact-modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="contact-backdrop" onclick="closeContactModal()"></div>
+    
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0 pointer-events-auto">
+                <!-- Modal Panel -->
+                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl opacity-0 scale-95" id="contact-panel">
+                    
+                    <!-- Header -->
+                    <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
+                        <h3 class="text-xl font-header font-bold text-slate-900" id="contact-modal-title">Contact Support</h3>
+                        <button type="button" onclick="closeContactModal()" class="text-slate-400 hover:text-slate-500 focus:outline-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-50 transition-colors">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+    
+                    <!-- Content -->
+                    <div class="px-6 py-8 max-h-[80vh] overflow-y-auto">
+                        <div class="grid md:grid-cols-2 gap-12">
+                            
+                            <!-- Left: Info -->
+                            <div>
+                                <h4 class="text-2xl font-header font-bold text-slate-900 mb-4">We're here to help</h4>
+                                <p class="text-slate-600 mb-8">Have a question about an order or our pricing? Reach out using the form or the details below.</p>
+                                
+                                <div class="space-y-6">
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-brand-800 flex-shrink-0">
+                                            <i class="fa-solid fa-envelope"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-slate-900">Email Us</h3>
+                                            <p class="text-slate-500">support@printpostgo.com</p>
+                                            <p class="text-xs text-slate-400 mt-1">Response time: &lt; 24 hours</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-brand-800 flex-shrink-0">
+                                            <i class="fa-solid fa-clock"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-slate-900">Operating Hours</h3>
+                                            <p class="text-slate-500">Mon - Fri: 9am - 5pm EST</p>
+                                            <p class="text-slate-500">Sat - Sun: Closed</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+    
+                            <!-- Right: Form -->
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                                <form class="space-y-4" onsubmit="event.preventDefault(); alert('Message sent! We will reply shortly.'); closeContactModal();">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                                        <input type="text" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-800 focus:ring-brand-800 px-3 py-2 border" placeholder="Jane Doe" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                                        <input type="email" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-800 focus:ring-brand-800 px-3 py-2 border" placeholder="jane@example.com" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Order ID (Optional)</label>
+                                        <input type="text" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-800 focus:ring-brand-800 px-3 py-2 border" placeholder="#12345">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Message</label>
+                                        <textarea rows="3" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-800 focus:ring-brand-800 px-3 py-2 border resize-none" required></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-brand-800 hover:bg-brand-900 text-white font-bold py-2.5 rounded-lg transition-colors">Send Message</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic Script -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
+
+        // --- Firebase Init ---
+        // Updated with your specific project credentials
+        const firebaseConfig = {
+            apiKey: "AIzaSyDT_UTqCO2nNDwtjaxl-UiCaoAZXDnWqME",
+            authDomain: "printpostgo.firebaseapp.com",
+            projectId: "printpostgo",
+            storageBucket: "printpostgo.firebasestorage.app",
+            messagingSenderId: "545213974296",
+            appId: "1:545213974296:web:e84558345e92211297c06d",
+            measurementId: "G-R6CG4P9C7J"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+
+        // App ID for storage organization (defaults if not provided by environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'printpostgo-web';
+
+        // --- Logic: File Handling & Upload ---
+        window.handleFileSelect = function(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/pdf') {
+                document.getElementById('upload-error').classList.remove('hidden');
+                resetFile();
+                return;
+            }
+
+            document.getElementById('upload-error').classList.add('hidden');
+            window.state.file = file;
+
+            // UI Updates
+            document.getElementById('upload-prompt').classList.add('hidden');
+            document.getElementById('file-info').classList.remove('hidden');
+            document.getElementById('filename-display').textContent = file.name;
+            document.getElementById('page-count-display').textContent = "Scanning...";
+            
+            // Read PDF and Count Pages
+            const fileReader = new FileReader();
+            fileReader.onload = function() {
+                const typedarray = new Uint8Array(this.result);
+
+                pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+                    window.state.pageCount = pdf.numPages;
+                    document.getElementById('page-count-display').textContent = `${window.state.pageCount} Pages detected`;
+                    
+                    // Render First Page Preview
+                    pdf.getPage(1).then(function(page) {
+                        var scale = 1.0;
+                        var viewport = page.getViewport({scale: scale});
+                        var canvas = document.getElementById('pdf-preview');
+                        var context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        var renderContext = {
+                          canvasContext: context,
+                          viewport: viewport
+                        };
+                        page.render(renderContext);
+                    });
+
+                    // Trigger Auto-Logic for Envelopes
+                    enforceEnvelopeRules();
+                    calculateTotal();
+                }, function (reason) {
+                    console.error(reason);
+                    document.getElementById('page-count-display').textContent = "Error reading PDF";
+                    window.state.pageCount = 0;
+                    calculateTotal();
+                });
+            };
+            fileReader.readAsArrayBuffer(file);
+        }
+
+        window.resetFile = function() {
+            document.getElementById('file-upload').value = '';
+            window.state.file = null;
+            window.state.pageCount = 0;
+            document.getElementById('upload-prompt').classList.remove('hidden');
+            document.getElementById('file-info').classList.add('hidden');
+            document.getElementById('upload-error').classList.add('hidden');
+            calculateTotal();
+        }
+
+        // --- Logic: Form Rules & Calculation ---
+        // (Moved these to global window scope so module script can access them or keep in module scope if attached to window)
+        
+        // Attaching to window for HTML inline event handlers
+        window.enforceEnvelopeRules = function() {
+            const stdRadio = document.querySelector('input[name="mailType"][value="standard"]');
+            const lrgRadio = document.querySelector('input[name="mailType"][value="large"]');
+            const stdLabel = document.getElementById('label-standard');
+            const warning = document.getElementById('envelope-warning');
+
+            if (window.state.pageCount > 10) {
+                window.state.mailType = 'large';
+                lrgRadio.checked = true;
+                stdRadio.disabled = true;
+                stdLabel.classList.add('opacity-50', 'cursor-not-allowed');
+                warning.classList.remove('hidden');
+            } else {
+                stdRadio.disabled = false;
+                stdLabel.classList.remove('opacity-50', 'cursor-not-allowed');
+                warning.classList.add('hidden');
+            }
+        }
+
+        window.calculateTotal = function() {
+            window.state.printType = document.querySelector('input[name="printType"]:checked').value;
+            window.state.mailType = document.querySelector('input[name="mailType"]:checked').value;
+            window.state.paperSize = document.querySelector('input[name="paperSize"]:checked').value;
+
+            if (window.state.pageCount > 10 && window.state.mailType === 'standard') {
+                enforceEnvelopeRules(); 
+                window.state.mailType = 'large';
+            }
+
+            const stdDate = getDeliveryDate(5);
+            const prioDate = getDeliveryDate(2);
+            document.getElementById('date-standard').innerHTML = `Est. Arrival: ${stdDate}`;
+            document.getElementById('date-priority').innerHTML = `Est. Arrival: ${prioDate}`;
+
+            const printRate = window.state.printType === 'bw' ? window.PRICES.bw : window.PRICES.color;
+            let printCost = window.state.pageCount * printRate;
+            
+            let legalCost = 0;
+            if (window.state.paperSize === 'legal') {
+                legalCost = window.state.pageCount * window.PRICES.legalSurcharge;
+            }
+            
+            const shippingCost = window.state.mailType === 'standard' ? window.PRICES.standardEnv : window.PRICES.largeEnv;
+            const total = printCost + legalCost + shippingCost + window.PRICES.serviceFee;
+
+            document.getElementById('summary-page-count').textContent = window.state.pageCount;
+            document.getElementById('summary-print-cost').textContent = formatMoney(printCost);
+            document.getElementById('summary-shipping-cost').textContent = formatMoney(shippingCost);
+            
+            const legalRow = document.getElementById('legal-surcharge-row');
+            if (window.state.paperSize === 'legal' && window.state.pageCount > 0) {
+                legalRow.classList.remove('hidden');
+                legalRow.classList.add('flex');
+                document.getElementById('summary-legal-cost').textContent = formatMoney(legalCost);
+            } else {
+                legalRow.classList.add('hidden');
+                legalRow.classList.remove('flex');
+            }
+            
+            const totalEl = document.getElementById('final-total');
+            totalEl.textContent = formatMoney(total);
+            document.getElementById('mobile-total').textContent = formatMoney(total);
+
+            if (window.state.pageCount > 0 && window.state.file) {
+                document.getElementById('submit-btn').disabled = false;
+            } else {
+                document.getElementById('submit-btn').disabled = true;
+            }
+        }
+
+        window.handleFormSubmit = async function(e) {
+            e.preventDefault();
+
+            if (!window.state.file) {
+                alert("Please upload a PDF first.");
+                return;
+            }
+
+            // 1. Show Loading State
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            const loadingText = document.querySelector('#loading-overlay h3');
+            const loadingSub = document.querySelector('#loading-overlay p');
+
+            try {
+                // 2. Upload to Firebase Storage
+                loadingText.textContent = "Uploading Document...";
+                loadingSub.textContent = "Encrypting and storing securely...";
+
+                await signInAnonymously(auth);
+                const uniqueId = crypto.randomUUID();
+                // Ensure the path matches your Firestore security rules (artifacts/...)
+                const fileRef = ref(storage, `artifacts/${appId}/public/uploads/${uniqueId}_${window.state.file.name}`);
+                
+                await uploadBytes(fileRef, window.state.file);
+                const downloadURL = await getDownloadURL(fileRef);
+
+                console.log("File uploaded:", downloadURL);
+
+                // 3. Prepare Payload
+                loadingText.textContent = "Redirecting to Stripe...";
+                loadingSub.textContent = "Creating secure checkout session...";
+
+                const senderStreet = document.querySelector('input[name="senderStreet"]').value;
+                const senderCity = document.querySelector('input[name="senderCity"]').value;
+                const senderState = document.querySelector('input[name="senderState"]').value;
+                const senderZip = document.querySelector('input[name="senderZip"]').value;
+                const fullSenderAddress = `${senderStreet}, ${senderCity}, ${senderState} ${senderZip}`;
+
+                const recipientStreet = document.querySelector('input[name="recipientStreet"]').value;
+                const recipientCity = document.querySelector('input[name="recipientCity"]').value;
+                const recipientState = document.querySelector('input[name="recipientState"]').value;
+                const recipientZip = document.querySelector('input[name="recipientZip"]').value;
+                const fullRecipientAddress = `${recipientStreet}, ${recipientCity}, ${recipientState} ${recipientZip}`;
+
+                // Call Netlify Function
+                const response = await fetch('/.netlify/functions/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pageCount: window.state.pageCount,
+                        printType: window.state.printType,
+                        mailType: window.state.mailType,
+                        paperSize: window.state.paperSize,
+                        customerEmail: document.querySelector('input[name="senderEmail"]').value,
+                        fileUrl: downloadURL, // SENDING THE URL HERE
+                        metadata: {
+                            sender: document.querySelector('input[name="senderName"]').value,
+                            sender_address: fullSenderAddress,
+                            recipient: document.querySelector('input[name="recipientName"]').value,
+                            recipient_address: fullRecipientAddress,
+                            paper_size: window.state.paperSize,
+                            file_url: downloadURL // Redundant but good for visibility in Stripe Dashboard
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const { url } = await response.json();
+                window.location.href = url;
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading-overlay').classList.add('hidden');
+                alert('Service error: ' + error.message);
+            }
+        }
+
+    </script>
+
+    <!-- Global State & Non-Module Helpers -->
+    <script>
+        // Setup PDF.js worker (Global scope)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // State Management (Global)
+        window.state = {
+            pageCount: 0,
+            printType: 'bw',
+            mailType: 'standard',
+            paperSize: 'letter',
+            file: null
+        };
+
+        // Pricing Constants (Global)
+        window.PRICES = {
+            bw: 0.30,
+            color: 0.85,
+            legalSurcharge: 0.10,
+            standardEnv: 4.00,
+            largeEnv: 19.00,
+            serviceFee: 1.00
+        };
+
+        function getDeliveryDate(daysToAdd) {
+            const date = new Date();
+            date.setDate(date.getDate() + daysToAdd);
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function formatMoney(amount) {
+            return '$' + amount.toFixed(2);
+        }
+
+        // Initialize (Needs to wait for DOM or just run)
+        window.addEventListener('DOMContentLoaded', () => {
+            if(window.calculateTotal) window.calculateTotal();
+        });
+        
+        // Drag & Drop Visuals
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-upload');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('bg-blue-50', 'border-brand-300');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('bg-blue-50', 'border-brand-300');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files; 
+            if(window.handleFileSelect) window.handleFileSelect(fileInput);
+        }
+    </script>
+</body>
+</html>

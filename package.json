@@ -1,0 +1,8 @@
+{
+  "name": "printpostgo-functions",
+  "version": "1.0.0",
+  "description": "Backend functions for PrintPostGo",
+  "dependencies": {
+    "stripe": "^14.14.0"
+  }
+}
