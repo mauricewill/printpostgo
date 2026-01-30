@@ -1062,7 +1062,20 @@
                     })
                 });
 
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) {
+                    // ERROR HANDLING UPDATE: Diagnosing the crash
+                    let errorMessage = `Server Error (${response.status})`;
+                    
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.error) errorMessage = errorData.error;
+                    } catch (e) {
+                        // If JSON parse fails, it means the server returned a raw HTML crash page
+                        if (response.status === 500) errorMessage = "Server Error 500: System Crash. (Likely missing package.json or API Key)";
+                        if (response.status === 404) errorMessage = "Error 404: Function url not found.";
+                    }
+                    throw new Error(errorMessage);
+                }
 
                 const { url } = await response.json();
                 window.location.href = url;
@@ -1070,7 +1083,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('loading-overlay').classList.add('hidden');
-                alert('Service error: ' + error.message);
+                alert('Troubleshooting: ' + error.message);
             }
         }
 
