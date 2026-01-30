@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Backend functions for PrintPostGo",
   "dependencies": {
-    "stripe": "^14.14.0"
+    "stripe": "^14.14.0",
+    "@sendgrid/mail": "^8.1.0"
   }
 }
