@@ -829,265 +829,179 @@
     </div>
 
     <!-- Logic Script -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
+   
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
-        // --- Firebase Init ---
-        // Updated with your specific project credentials
-        const firebaseConfig = {
-            apiKey: "AIzaSyDT_UTqCO2nNDwtjaxl-UiCaoAZXDnWqME",
-            authDomain: "printpostgo.firebaseapp.com",
-            projectId: "printpostgo",
-            storageBucket: "printpostgo.firebasestorage.app",
-            messagingSenderId: "545213974296",
-            appId: "1:545213974296:web:e84558345e92211297c06d",
-            measurementId: "G-R6CG4P9C7J"
-        };
+/* =============================
+   FIREBASE INIT
+============================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDT_UTqCO2nNDwtjaxl-UiCaoAZXDnWqME",
+  authDomain: "printpostgo.firebaseapp.com",
+  projectId: "printpostgo",
+  storageBucket: "printpostgo.firebasestorage.app",
+  messagingSenderId: "545213974296",
+  appId: "1:545213974296:web:e84558345e92211297c06d",
+  measurementId: "G-R6CG4P9C7J"
+};
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const storage = getStorage(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const storage = getStorage(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'printpostgo-web';
 
-        // App ID for storage organization (defaults if not provided by environment)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'printpostgo-web';
+/* =============================
+   FILE HANDLING
+============================= */
+window.handleFileSelect = function (input) {
+  const file = input.files[0];
+  if (!file) return;
 
-        // --- Logic: File Handling & Upload ---
-        window.handleFileSelect = function(input) {
-            const file = input.files[0];
-            if (!file) return;
+  if (file.type !== 'application/pdf') {
+    document.getElementById('upload-error').classList.remove('hidden');
+    resetFile();
+    return;
+  }
 
-            if (file.type !== 'application/pdf') {
-                document.getElementById('upload-error').classList.remove('hidden');
-                resetFile();
-                return;
-            }
+  document.getElementById('upload-error').classList.add('hidden');
+  window.state.file = file;
 
-            document.getElementById('upload-error').classList.add('hidden');
-            window.state.file = file;
+  document.getElementById('upload-prompt').classList.add('hidden');
+  document.getElementById('file-info').classList.remove('hidden');
+  document.getElementById('filename-display').textContent = file.name;
+  document.getElementById('page-count-display').textContent = "Scanning...";
 
-            // UI Updates
-            document.getElementById('upload-prompt').classList.add('hidden');
-            document.getElementById('file-info').classList.remove('hidden');
-            document.getElementById('filename-display').textContent = file.name;
-            document.getElementById('page-count-display').textContent = "Scanning...";
-            
-            // Read PDF and Count Pages
-            const fileReader = new FileReader();
-            fileReader.onload = function() {
-                const typedarray = new Uint8Array(this.result);
+  const reader = new FileReader();
+  reader.onload = function () {
+    const typedarray = new Uint8Array(this.result);
+    pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+      window.state.pageCount = pdf.numPages;
+      document.getElementById('page-count-display').textContent =
+        `${window.state.pageCount} Pages detected`;
 
-                pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-                    window.state.pageCount = pdf.numPages;
-                    document.getElementById('page-count-display').textContent = `${window.state.pageCount} Pages detected`;
-                    
-                    // Render First Page Preview
-                    pdf.getPage(1).then(function(page) {
-                        var scale = 1.0;
-                        var viewport = page.getViewport({scale: scale});
-                        var canvas = document.getElementById('pdf-preview');
-                        var context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        
-                        var renderContext = {
-                          canvasContext: context,
-                          viewport: viewport
-                        };
-                        page.render(renderContext);
-                    });
+      enforceEnvelopeRules();
+      calculateTotal();
+    }).catch(() => {
+      window.state.pageCount = 0;
+      calculateTotal();
+    });
+  };
+  reader.readAsArrayBuffer(file);
+};
 
-                    // Trigger Auto-Logic for Envelopes
-                    enforceEnvelopeRules();
-                    calculateTotal();
-                }, function (reason) {
-                    console.error(reason);
-                    document.getElementById('page-count-display').textContent = "Error reading PDF";
-                    window.state.pageCount = 0;
-                    calculateTotal();
-                });
-            };
-            fileReader.readAsArrayBuffer(file);
-        }
+window.resetFile = function () {
+  document.getElementById('file-upload').value = '';
+  window.state.file = null;
+  window.state.pageCount = 0;
+  document.getElementById('upload-prompt').classList.remove('hidden');
+  document.getElementById('file-info').classList.add('hidden');
+  calculateTotal();
+};
 
-        window.resetFile = function() {
-            document.getElementById('file-upload').value = '';
-            window.state.file = null;
-            window.state.pageCount = 0;
-            document.getElementById('upload-prompt').classList.remove('hidden');
-            document.getElementById('file-info').classList.add('hidden');
-            document.getElementById('upload-error').classList.add('hidden');
-            calculateTotal();
-        }
+/* =============================
+   ENVELOPE RULES
+============================= */
+window.enforceEnvelopeRules = function () {
+  const stdRadio = document.querySelector('input[name="mailType"][value="standard"]');
+  const lrgRadio = document.querySelector('input[name="mailType"][value="large"]');
+  const stdLabel = document.getElementById('label-standard');
+  const warning = document.getElementById('envelope-warning');
 
-        // --- Logic: Form Rules & Calculation ---
-        // (Moved these to global window scope so module script can access them or keep in module scope if attached to window)
-        
-        // Attaching to window for HTML inline event handlers
-        window.enforceEnvelopeRules = function() {
-            const stdRadio = document.querySelector('input[name="mailType"][value="standard"]');
-            const lrgRadio = document.querySelector('input[name="mailType"][value="large"]');
-            const stdLabel = document.getElementById('label-standard');
-            const warning = document.getElementById('envelope-warning');
+  if (window.state.pageCount > 10) {
+    window.state.mailType = 'large';
+    lrgRadio.checked = true;
+    stdRadio.disabled = true;
+    stdLabel.classList.add('opacity-50', 'cursor-not-allowed');
+    warning.classList.remove('hidden');
+  } else {
+    stdRadio.disabled = false;
+    stdLabel.classList.remove('opacity-50', 'cursor-not-allowed');
+    warning.classList.add('hidden');
+  }
+};
 
-            if (window.state.pageCount > 10) {
-                window.state.mailType = 'large';
-                lrgRadio.checked = true;
-                stdRadio.disabled = true;
-                stdLabel.classList.add('opacity-50', 'cursor-not-allowed');
-                warning.classList.remove('hidden');
-            } else {
-                stdRadio.disabled = false;
-                stdLabel.classList.remove('opacity-50', 'cursor-not-allowed');
-                warning.classList.add('hidden');
-            }
-        }
+/* =============================
+   SERVER-TRUTH PRICE PREVIEW
+============================= */
+window.calculateTotal = async function () {
+  window.state.printType =
+    document.querySelector('input[name="printType"]:checked')?.value || 'bw';
+  window.state.mailType =
+    document.querySelector('input[name="mailType"]:checked')?.value || 'standard';
+  window.state.paperSize =
+    document.querySelector('input[name="paperSize"]:checked')?.value || 'letter';
 
-        window.calculateTotal = function() {
-            window.state.printType = document.querySelector('input[name="printType"]:checked').value;
-            window.state.mailType = document.querySelector('input[name="mailType"]:checked').value;
-            window.state.paperSize = document.querySelector('input[name="paperSize"]:checked').value;
+  if (window.state.pageCount > 10 && window.state.mailType === 'standard') {
+    enforceEnvelopeRules();
+    window.state.mailType = 'large';
+  }
 
-            if (window.state.pageCount > 10 && window.state.mailType === 'standard') {
-                enforceEnvelopeRules(); 
-                window.state.mailType = 'large';
-            }
+  try {
+    const response = await fetch('/.netlify/functions/get-price-quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pageCount: window.state.pageCount,
+        printType: window.state.printType,
+        mailType: window.state.mailType,
+        paperSize: window.state.paperSize
+      })
+    });
 
-            const stdDate = getDeliveryDate(5);
-            const prioDate = getDeliveryDate(2);
-            document.getElementById('date-standard').innerHTML = `Est. Arrival: ${stdDate}`;
-            document.getElementById('date-priority').innerHTML = `Est. Arrival: ${prioDate}`;
+    const data = await response.json();
 
-            const printRate = window.state.printType === 'bw' ? window.PRICES.bw : window.PRICES.color;
-            let printCost = window.state.pageCount * printRate;
-            
-            let legalCost = 0;
-            if (window.state.paperSize === 'legal') {
-                legalCost = window.state.pageCount * window.PRICES.legalSurcharge;
-            }
-            
-            const shippingCost = window.state.mailType === 'standard' ? window.PRICES.standardEnv : window.PRICES.largeEnv;
-            const total = printCost + legalCost + shippingCost + window.PRICES.serviceFee;
+    if (data.total_dollars) {
+      document.getElementById('final-total').textContent = `$${data.total_dollars}`;
+      document.getElementById('mobile-total').textContent = `$${data.total_dollars}`;
+    }
+  } catch (err) {
+    console.error('Price preview error:', err);
+  }
 
-            document.getElementById('summary-page-count').textContent = window.state.pageCount;
-            document.getElementById('summary-print-cost').textContent = formatMoney(printCost);
-            document.getElementById('summary-shipping-cost').textContent = formatMoney(shippingCost);
-            
-            const legalRow = document.getElementById('legal-surcharge-row');
-            if (window.state.paperSize === 'legal' && window.state.pageCount > 0) {
-                legalRow.classList.remove('hidden');
-                legalRow.classList.add('flex');
-                document.getElementById('summary-legal-cost').textContent = formatMoney(legalCost);
-            } else {
-                legalRow.classList.add('hidden');
-                legalRow.classList.remove('flex');
-            }
-            
-            const totalEl = document.getElementById('final-total');
-            totalEl.textContent = formatMoney(total);
-            document.getElementById('mobile-total').textContent = formatMoney(total);
+  document.getElementById('submit-btn').disabled =
+    !(window.state.pageCount > 0 && window.state.file);
+};
 
-            if (window.state.pageCount > 0 && window.state.file) {
-                document.getElementById('submit-btn').disabled = false;
-            } else {
-                document.getElementById('submit-btn').disabled = true;
-            }
-        }
+/* =============================
+   FORM SUBMIT → STRIPE
+============================= */
+window.handleFormSubmit = async function (e) {
+  e.preventDefault();
+  if (!window.state.file) return alert("Please upload a PDF first.");
 
-        window.handleFormSubmit = async function(e) {
-            e.preventDefault();
+  document.getElementById('loading-overlay').classList.remove('hidden');
 
-            if (!window.state.file) {
-                alert("Please upload a PDF first.");
-                return;
-            }
+  await signInAnonymously(auth);
 
-            // 1. Show Loading State
-            document.getElementById('loading-overlay').classList.remove('hidden');
-            const loadingText = document.querySelector('#loading-overlay h3');
-            const loadingSub = document.querySelector('#loading-overlay p');
+  const fileRef = ref(
+    storage,
+    `artifacts/${appId}/public/uploads/${crypto.randomUUID()}_${window.state.file.name}`
+  );
 
-            try {
-                // 2. Upload to Firebase Storage
-                loadingText.textContent = "Uploading Document...";
-                loadingSub.textContent = "Encrypting and storing securely...";
+  await uploadBytes(fileRef, window.state.file);
+  const downloadURL = await getDownloadURL(fileRef);
 
-                await signInAnonymously(auth);
-                const uniqueId = crypto.randomUUID();
-                // Ensure the path matches your Firestore security rules (artifacts/...)
-                const fileRef = ref(storage, `artifacts/${appId}/public/uploads/${uniqueId}_${window.state.file.name}`);
-                
-                await uploadBytes(fileRef, window.state.file);
-                const downloadURL = await getDownloadURL(fileRef);
+  const response = await fetch('/.netlify/functions/create-checkout-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      pageCount: window.state.pageCount,
+      printType: window.state.printType,
+      mailType: window.state.mailType,
+      paperSize: window.state.paperSize,
+      fileUrl: downloadURL
+    })
+  });
 
-                console.log("File uploaded:", downloadURL);
+  const { url } = await response.json();
+  window.location.href = url;
+};
+</script>
 
-                // 3. Prepare Payload
-                loadingText.textContent = "Redirecting to Stripe...";
-                loadingSub.textContent = "Creating secure checkout session...";
 
-                const senderStreet = document.querySelector('input[name="senderStreet"]').value;
-                const senderCity = document.querySelector('input[name="senderCity"]').value;
-                const senderState = document.querySelector('input[name="senderState"]').value;
-                const senderZip = document.querySelector('input[name="senderZip"]').value;
-                const fullSenderAddress = `${senderStreet}, ${senderCity}, ${senderState} ${senderZip}`;
-
-                const recipientStreet = document.querySelector('input[name="recipientStreet"]').value;
-                const recipientCity = document.querySelector('input[name="recipientCity"]').value;
-                const recipientState = document.querySelector('input[name="recipientState"]').value;
-                const recipientZip = document.querySelector('input[name="recipientZip"]').value;
-                const fullRecipientAddress = `${recipientStreet}, ${recipientCity}, ${recipientState} ${recipientZip}`;
-
-                // Call Netlify Function
-                const response = await fetch('/.netlify/functions/create-checkout-session', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pageCount: window.state.pageCount,
-                        printType: window.state.printType,
-                        mailType: window.state.mailType,
-                        paperSize: window.state.paperSize,
-                        customerEmail: document.querySelector('input[name="senderEmail"]').value,
-                        fileUrl: downloadURL, // SENDING THE URL HERE
-                        metadata: {
-                            sender: document.querySelector('input[name="senderName"]').value,
-                            sender_address: fullSenderAddress,
-                            recipient: document.querySelector('input[name="recipientName"]').value,
-                            recipient_address: fullRecipientAddress,
-                            paper_size: window.state.paperSize,
-                            file_url: downloadURL // Redundant but good for visibility in Stripe Dashboard
-                        }
-                    })
-                });
-
-                if (!response.ok) {
-                    // ERROR HANDLING UPDATE: Diagnosing the crash
-                    let errorMessage = `Server Error (${response.status})`;
-                    
-                    try {
-                        const errorData = await response.json();
-                        if (errorData.error) errorMessage = errorData.error;
-                    } catch (e) {
-                        // If JSON parse fails, it means the server returned a raw HTML crash page
-                        if (response.status === 500) errorMessage = "Server Error 500: System Crash. (Likely missing package.json or API Key)";
-                        if (response.status === 404) errorMessage = "Error 404: Function url not found.";
-                    }
-                    throw new Error(errorMessage);
-                }
-
-                const { url } = await response.json();
-                window.location.href = url;
-
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('loading-overlay').classList.add('hidden');
-                alert('Troubleshooting: ' + error.message);
-            }
-        }
-
-    </script>
 
     <!-- Global State & Non-Module Helpers -->
     <script>
@@ -1134,14 +1048,14 @@
         };
 
         // Pricing Constants (Global)
-        window.PRICES = {
+       <!-- window.PRICES = {
             bw: 0.30,
             color: 0.85,
             legalSurcharge: 0.10,
             standardEnv: 4.00,
             largeEnv: 19.00,
             serviceFee: 1.00
-        };
+        }; -->
 
         function getDeliveryDate(daysToAdd) {
             const date = new Date();
