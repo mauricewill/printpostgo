@@ -19,7 +19,7 @@ exports.handler = async (event) => {
       fileUrl,
       pageCount,
       printType = "bw",
-      mailType = "standard",
+      mailType = "economy",
       paperSize = "letter",
       customerEmail = "",
       metadata = {}
@@ -44,7 +44,7 @@ exports.handler = async (event) => {
     };
 
     const pricePerPage = printType === "color" ? PRICE_PER_PAGE_COLOR : PRICE_PER_PAGE_BW;
-    const mailCost = MAIL_PRICES[mailType] ?? MAIL_PRICES.standard;
+    const mailCost = MAIL_PRICES[mailType] ?? MAIL_PRICES.economy;
     const printingTotal = pages * pricePerPage;
 
     // BUILD LINE ITEMS ARRAY - THIS IS THE KEY!
@@ -78,18 +78,15 @@ exports.handler = async (event) => {
 
     // Line Item 3: Mailing
     const mailTypeNames = {
-      standard: 'Standard Mail (First Class)',
-      first_class: 'Standard Mail (First Class)',
-      large: 'Large Envelope',
-      priority: 'Priority Mail',
-      certified: 'Certified Mail'
-    };
+      economy: 'Economy Mail',
+      priority: 'Priority Mail'
+         };
     
     lineItems.push({
       price_data: {
         currency: 'usd',
         product_data: {
-          name: mailTypeNames[mailType] || 'Standard Mail',
+          name: mailTypeNames[mailType] || 'Economy Mail',
           description: `${paperSize.toUpperCase()} paper`
         },
         unit_amount: mailCost
