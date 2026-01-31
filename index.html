@@ -497,16 +497,16 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-3">Mailing Speed</label>
                                 <div class="space-y-3">
-                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 transition-all" id="label-standard">
-                                        <input type="radio" name="mailType" value="standard" checked class="mt-1 mr-3 text-brand-600 focus:ring-brand-500" onchange="calculateTotal()">
+                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 transition-all" id="label-economy">
+                                        <input type="radio" name="mailType" value="economy" checked class="mt-1 mr-3 text-brand-600 focus:ring-brand-500" onchange="calculateTotal()">
                                         <div>
                                             <span class="block text-sm font-semibold text-slate-900">Economy (No Tracking)</span>
                                             <span class="block text-xs text-slate-500">Up to 10 pages • $4.00</span>
-                                            <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-standard">Est. Arrival: ...</span>
+                                            <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-economy">Est. Arrival: ...</span>
                                         </div>
                                     </label>
-                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 transition-all" id="label-large">
-                                        <input type="radio" name="mailType" value="large" class="mt-1 mr-3 text-brand-600 focus:ring-brand-500" onchange="calculateTotal()">
+                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 transition-all" id="label-priority">
+                                        <input type="radio" name="mailType" value="priority" class="mt-1 mr-3 text-brand-600 focus:ring-brand-500" onchange="calculateTotal()">
                                         <div>
                                             <span class="block text-sm font-semibold text-slate-900">Priority (With Tracking)</span>
                                             <span class="block text-xs text-slate-500">1-40 pages • $19.00</span>
@@ -514,7 +514,7 @@
                                         </div>
                                     </label>
                                 </div>
-                                <p id="envelope-warning" class="text-xs text-amber-600 mt-2 hidden"><i class="fa-solid fa-triangle-exclamation"></i> Documents over 10 pages must use Priority Mail.</p>
+                                
                             </div>
                         </div>
 
@@ -927,20 +927,20 @@
         
         // Attaching to window for HTML inline event handlers
         window.enforceEnvelopeRules = function() {
-            const stdRadio = document.querySelector('input[name="mailType"][value="standard"]');
-            const lrgRadio = document.querySelector('input[name="mailType"][value="large"]');
-            const stdLabel = document.getElementById('label-standard');
+            const ecoRadio = document.querySelector('input[name="mailType"][value="economy"]');
+            const priRadio = document.querySelector('input[name="mailType"][value="priority"]');
+            const ecoLabel = document.getElementById('label-economy');
             const warning = document.getElementById('envelope-warning');
 
             if (window.state.pageCount > 10) {
-                window.state.mailType = 'large';
-                lrgRadio.checked = true;
-                stdRadio.disabled = true;
-                stdLabel.classList.add('opacity-50', 'cursor-not-allowed');
+                window.state.mailType = 'priority';
+                priRadio.checked = true;
+                ecoRadio.disabled = true;
+                ecoLabel.classList.add('opacity-50', 'cursor-not-allowed');
                 warning.classList.remove('hidden');
             } else {
-                stdRadio.disabled = false;
-                stdLabel.classList.remove('opacity-50', 'cursor-not-allowed');
+                ecoRadio.disabled = false;
+                ecoLabel.classList.remove('opacity-50', 'cursor-not-allowed');
                 warning.classList.add('hidden');
             }
         }
@@ -950,14 +950,14 @@
             window.state.mailType = document.querySelector('input[name="mailType"]:checked').value;
             window.state.paperSize = document.querySelector('input[name="paperSize"]:checked').value;
 
-            if (window.state.pageCount > 10 && window.state.mailType === 'standard') {
+            if (window.state.pageCount > 10 && window.state.mailType === 'economy') {
                 enforceEnvelopeRules(); 
-                window.state.mailType = 'large';
+                window.state.mailType = 'priority';
             }
 
-            const stdDate = getDeliveryDate(5);
+            const ecoDate = getDeliveryDate(5);
             const prioDate = getDeliveryDate(2);
-            document.getElementById('date-standard').innerHTML = `Est. Arrival: ${stdDate}`;
+            document.getElementById('date-economy').innerHTML = `Est. Arrival: ${ecoDate}`;
             document.getElementById('date-priority').innerHTML = `Est. Arrival: ${prioDate}`;
 
             const printRate = window.state.printType === 'bw' ? window.PRICES.bw : window.PRICES.color;
@@ -968,7 +968,7 @@
                 legalCost = window.state.pageCount * window.PRICES.legalSurcharge;
             }
             
-            const shippingCost = window.state.mailType === 'standard' ? window.PRICES.standardEnv : window.PRICES.largeEnv;
+            const shippingCost = window.state.mailType === 'economy' ? window.PRICES.standardEnv : window.PRICES.largeEnv;
             const total = printCost + legalCost + shippingCost + window.PRICES.serviceFee;
 
             document.getElementById('summary-page-count').textContent = window.state.pageCount;
@@ -1144,7 +1144,7 @@
         window.state = {
             pageCount: 0,
             printType: 'bw',
-            mailType: 'standard',
+            mailType: 'economy',
             paperSize: 'letter',
             file: null
         };
