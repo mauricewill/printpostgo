@@ -61,7 +61,7 @@ exports.handler = async (event) => {
 
     const MAIL_PRICES = {
       economy: 400,       // $4.00
-      priority: 19000       // $8.50
+      priority: 1900       // $19.00
       
     };
 
