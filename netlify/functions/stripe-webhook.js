@@ -27,16 +27,14 @@ exports.handler = async (event) => {
   if (stripeEvent.type === 'checkout.session.completed') {
     const session = stripeEvent.data.object;
     
-    // ✅ CRITICAL FIX: Read from metadata (where you stored it), not shipping_details
+    // ✅ CRITICAL FIX: Read from metadata (where your JSON shows the data actually lives)
     const meta = session.metadata || {};
 
-    // Build complete order details using the correct data source
+    // Build complete order details
     const orderDetails = {
-      // Payment Info
       sessionId: session.id,
       paymentStatus: session.payment_status,
       amountTotal: session.amount_total,
-      currency: session.currency,
       
       // File & Print Details
       fileUrl: meta.file_url,
@@ -45,22 +43,20 @@ exports.handler = async (event) => {
       mailType: meta.mail_type || 'economy',
       paperSize: meta.paper_size || 'letter',
       
-      // Sender Info (From Metadata)
+      // Sender Info (Matches your JSON keys)
       sender: {
         name: meta.sender_name || 'N/A',
-        address: meta.sender_address || 'N/A', // Your form sends full address as one string
+        address: meta.sender_address || 'N/A',
         email: meta.customer_email || session.customer_details?.email
       },
       
-      // Recipient Info (From Metadata)
+      // Recipient Info (Matches your JSON keys)
       recipient: {
         name: meta.recipient_name || 'N/A',
-        address: meta.recipient_address || 'N/A' // Your form sends full address as one string
+        address: meta.recipient_address || 'N/A'
       },
       
-      // Order Details
       orderDate: meta.order_date || new Date().toISOString(),
-      totalCents: meta.total_cents
     };
 
     console.log('✅ PAYMENT COMPLETED - Parsed Order Details:', JSON.stringify(orderDetails, null, 2));
@@ -73,82 +69,53 @@ exports.handler = async (event) => {
         <head>
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #1e40af; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-            .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
-            .section { margin-bottom: 25px; background: white; padding: 15px; border-radius: 5px; }
-            .section h3 { margin-top: 0; color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 5px; }
-            .info-row { margin: 8px 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; }
+            .header { background: #1e40af; color: white; padding: 20px; text-align: center; }
+            .section { margin-bottom: 20px; padding: 15px; background: #f9f9f9; }
             .label { font-weight: bold; color: #555; }
-            .file-link { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 10px; font-weight: bold;}
-            .file-link:hover { background: #1d4ed8; }
-            .footer { text-align: center; padding: 15px; color: #777; font-size: 12px; }
+            .btn { display: inline-block; background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 10px; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>✅ New Print Order Received!</h1>
-              <p>Order ID: ${orderDetails.sessionId.slice(-8)}</p>
+              <h1>New Order: ${orderDetails.sender.name}</h1>
             </div>
             
-            <div class="content">
-              <!-- Print Job - Priority Info -->
-              <div class="section">
-                <h3>🖨️ Job Assets</h3>
-                <div class="info-row">
-                  <a href="${orderDetails.fileUrl}" class="file-link">📥 Download Customer PDF</a>
-                </div>
-                <br>
-                <div class="info-row"><span class="label">Print Config:</span> ${orderDetails.printType.toUpperCase()} | ${orderDetails.paperSize.toUpperCase()}</div>
-                <div class="info-row"><span class="label">Mail Speed:</span> ${orderDetails.mailType.toUpperCase()}</div>
-                <div class="info-row"><span class="label">Page Count:</span> ${orderDetails.pageCount}</div>
-              </div>
-
-              <!-- Sender Section -->
-              <div class="section">
-                <h3>📧 Sender (Return Address)</h3>
-                <div class="info-row"><span class="label">Name:</span> ${orderDetails.sender.name}</div>
-                <div class="info-row"><span class="label">Address:</span> ${orderDetails.sender.address}</div>
-                <div class="info-row"><span class="label">Email:</span> ${orderDetails.sender.email}</div>
-              </div>
-
-              <!-- Recipient Section -->
-              <div class="section">
-                <h3>📬 Recipient (To Address)</h3>
-                <div class="info-row"><span class="label">Name:</span> ${orderDetails.recipient.name}</div>
-                <div class="info-row"><span class="label">Address:</span> ${orderDetails.recipient.address}</div>
-              </div>
-
-              <!-- Payment Section -->
-              <div class="section">
-                <h3>💰 Payment Info</h3>
-                <div class="info-row"><span class="label">Total:</span> $${(orderDetails.amountTotal / 100).toFixed(2)} USD</div>
-                <div class="info-row"><span class="label">Stripe Session:</span> ${orderDetails.sessionId}</div>
-              </div>
+            <div class="section">
+              <h3>🖨️ Job Details</h3>
+              <div><span class="label">PDF File:</span> <a href="${orderDetails.fileUrl}">Download PDF</a></div>
+              <div><span class="label">Config:</span> ${orderDetails.printType} | ${orderDetails.paperSize} | ${orderDetails.pageCount} pages</div>
             </div>
 
-            <div class="footer">
-              <p>Sent via PrintPostGo Automated System</p>
+            <div class="section">
+              <h3>📧 From</h3>
+              <div>${orderDetails.sender.name}</div>
+              <div>${orderDetails.sender.address}</div>
+              <div>${orderDetails.sender.email}</div>
+            </div>
+
+            <div class="section">
+              <h3>📬 To</h3>
+              <div>${orderDetails.recipient.name}</div>
+              <div>${orderDetails.recipient.address}</div>
             </div>
           </div>
         </body>
         </html>
       `;
 
-      // ✅ CRITICAL FIX: Use string literals for emails, or validate your env vars do not have @ symbols in the KEY name
-      const adminEmail = 'support@printpostgo.com'; 
-      const senderIdentity = 'maurice@printpostgo.com'; // Ensure this exact email is verified in SendGrid "Sender Authentication"
-
+      // Define your emails as simple strings
+      // ⚠️ IMPORTANT: 'from' email must be verified in SendGrid
       const msg = {
-        to: adminEmail, 
-        from: senderIdentity,
-        subject: `✅ Order #${orderDetails.sessionId.slice(-8)} - ${orderDetails.sender.name}`,
+        to: 'support@printpostgo.com', 
+        from: 'maurice@printpostgo.com', 
+        subject: `New Order #${orderDetails.sessionId.slice(-8)}`,
         html: emailHtml,
       };
 
       await sgMail.send(msg);
-      console.log(`✅ Email sent successfully to ${adminEmail}`);
+      console.log(`✅ Email sent successfully to support@printpostgo.com`);
 
     } catch (emailError) {
       console.error('❌ Failed to send email:', emailError.message);
