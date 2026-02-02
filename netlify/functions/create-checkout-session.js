@@ -1,4 +1,4 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.handler = async (event) => {
   // Enable CORS
@@ -8,13 +8,24 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
 
+  // Handle OPTIONS request for CORS
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
 
   try {
+    if (!event.body) {
+      throw new Error("Missing request body");
+    }
+
     const data = JSON.parse(event.body);
-    
+    console.log("📥 Received data:", JSON.stringify(data, null, 2));
+
+    /**
+     * ==============================
+     * 1. SAFELY EXTRACT INPUTS
+     * ==============================
+     */
     const {
       fileUrl,
       pageCount,
@@ -25,29 +36,60 @@ exports.handler = async (event) => {
       metadata = {}
     } = data;
 
+    // Validate required fields
     if (!fileUrl) {
       throw new Error("Missing file URL");
     }
 
+    // Ensure pageCount is a valid positive integer
     const pages = Math.max(parseInt(pageCount, 10) || 1, 1);
+    
+    if (isNaN(pages) || pages < 1) {
+      throw new Error(`Invalid page count: ${pageCount}`);
+    }
 
-    // PRICING IN CENTS
-    const BASE_FEE = 100; // $1.00
+    console.log(`📄 Processing order: ${pages} pages, ${printType}, ${mailType}, ${paperSize}`);
+
+    /**
+     * ==============================
+     * 2. PRICING RULES (CENTS)
+     * ==============================
+     */
+    const BASE_FEE = 100; // $1.00 handling
     const PRICE_PER_PAGE_BW = 30; // $0.30
     const PRICE_PER_PAGE_COLOR = 85; // $0.85
-    
+
     const MAIL_PRICES = {
-     
-      economy: 400,
-      priority: 1900
+      economy: 400,       // $4.00
+      priority: 19000       // $8.50
       
     };
 
+    // Determine per-page price
     const pricePerPage = printType === "color" ? PRICE_PER_PAGE_COLOR : PRICE_PER_PAGE_BW;
-    const mailCost = MAIL_PRICES[mailType] ?? MAIL_PRICES.economy;
+    
+    // Get mail cost (with fallback)
+    const mailCost = MAIL_PRICES[mailType] || MAIL_PRICES.standard;
+
+    // Calculate printing total
     const printingTotal = pages * pricePerPage;
 
-    // BUILD LINE ITEMS ARRAY - THIS IS THE KEY!
+    console.log(`💰 Pricing breakdown:
+      Base Fee: $${(BASE_FEE / 100).toFixed(2)}
+      Per Page: $${(pricePerPage / 100).toFixed(2)} × ${pages} = $${(printingTotal / 100).toFixed(2)}
+      Mail: $${(mailCost / 100).toFixed(2)}
+    `);
+
+    // Validate all amounts are positive integers
+    if (BASE_FEE <= 0 || pricePerPage <= 0 || mailCost <= 0) {
+      throw new Error("Invalid pricing configuration");
+    }
+
+    /**
+     * ==============================
+     * 3. BUILD LINE ITEMS ARRAY
+     * ==============================
+     */
     const lineItems = [];
 
     // Line Item 1: Service Fee
@@ -63,12 +105,13 @@ exports.handler = async (event) => {
       quantity: 1
     });
 
-    // Line Item 2: Printing (with dynamic description)
+    // Line Item 2: Printing
+    const printTypeName = printType === "color" ? "COLOR" : "B&W";
     lineItems.push({
       price_data: {
         currency: 'usd',
         product_data: {
-          name: `${printType.toUpperCase()} Printing`,
+          name: `${printTypeName} Printing`,
           description: `${pages} page${pages > 1 ? 's' : ''} × $${(pricePerPage / 100).toFixed(2)}/page`
         },
         unit_amount: pricePerPage
@@ -80,7 +123,7 @@ exports.handler = async (event) => {
     const mailTypeNames = {
       economy: 'Economy Mail',
       priority: 'Priority Mail'
-         };
+    };
     
     lineItems.push({
       price_data: {
@@ -94,12 +137,14 @@ exports.handler = async (event) => {
       quantity: 1
     });
 
-    // Calculate total for validation
+    // Calculate total
     const calculatedTotal = BASE_FEE + printingTotal + mailCost;
-    const finalTotal = Math.max(calculatedTotal, 500); // $5.00 minimum
+    const MINIMUM_ORDER = 500; // $5.00
+    const finalTotal = Math.max(calculatedTotal, MINIMUM_ORDER);
 
-    // If we need to add minimum charge
+    // Add minimum charge adjustment if needed
     if (finalTotal > calculatedTotal) {
+      const adjustment = finalTotal - calculatedTotal;
       lineItems.push({
         price_data: {
           currency: 'usd',
@@ -107,13 +152,21 @@ exports.handler = async (event) => {
             name: 'Minimum Order Adjustment',
             description: 'Minimum order total: $5.00'
           },
-          unit_amount: finalTotal - calculatedTotal
+          unit_amount: adjustment
         },
         quantity: 1
       });
+      console.log(`⚠️  Minimum order adjustment: $${(adjustment / 100).toFixed(2)}`);
     }
 
-    // Complete metadata
+    console.log(`💵 Final total: $${(finalTotal / 100).toFixed(2)}`);
+    console.log(`📦 Line items:`, JSON.stringify(lineItems, null, 2));
+
+    /**
+     * ==============================
+     * 4. BUILD COMPLETE METADATA
+     * ==============================
+     */
     const completeMetadata = {
       file_url: fileUrl,
       page_count: pages.toString(),
@@ -129,11 +182,15 @@ exports.handler = async (event) => {
       order_date: new Date().toISOString()
     };
 
-    // CREATE STRIPE SESSION
+    /**
+     * ==============================
+     * 5. CREATE STRIPE SESSION
+     * ==============================
+     */
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
-      line_items: lineItems, // ← MULTIPLE LINE ITEMS!
+      line_items: lineItems,
       metadata: completeMetadata,
       customer_email: customerEmail || undefined,
       success_url: `${process.env.URL || event.headers.origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
@@ -153,10 +210,15 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('❌ Checkout error:', error.message);
+    console.error('Stack:', error.stack);
+
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({
+        error: error.message,
+        details: 'Check Netlify function logs for more information'
+      })
     };
   }
 };
