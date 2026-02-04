@@ -59,7 +59,7 @@ exports.handler = async (event) => {
     const PRICE_PER_PAGE_BW = 30; // $0.30
     const PRICE_PER_PAGE_COLOR = 85; // $0.85
     const LEGAL_SURCHARGE = 10; // $0.10 per page for legal size
-    const LARGE_ORDER_FEE = 500; // $5.00 for orders with 10+ pages
+    const LARGE_ORDER_FEE = 500; // $5.00 for orders with 100+ pages
 
     const MAIL_PRICES = {
       standard: 400,      // $4.00 - Economy/Standard mail
@@ -75,8 +75,8 @@ exports.handler = async (event) => {
     // Calculate legal paper surcharge if applicable
     const legalSurcharge = paperSize === 'legal' ? LEGAL_SURCHARGE * pages : 0;
 
-    // Calculate large order fee (10+ pages)
-    const largeOrderFee = pages >= 10 ? LARGE_ORDER_FEE : 0;
+    // Calculate large order fee (100+ pages)
+    const largeOrderFee = pages >= 100 ? LARGE_ORDER_FEE : 0;
 
     // Calculate printing total
     const printingTotal = pages * pricePerPage;
@@ -168,7 +168,7 @@ exports.handler = async (event) => {
           currency: 'usd',
           product_data: {
             name: 'Large Order Fee',
-            description: 'Orders with 10 or more pages'
+            description: 'Orders with 100 or more pages'
           },
           unit_amount: largeOrderFee
         },
