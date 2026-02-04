@@ -55,14 +55,17 @@ exports.handler = async (event) => {
      * 2. PRICING RULES (CENTS)
      * ==============================
      */
-    const BASE_FEE = 100; // $1.00 handling
+    const BASE_FEE = 150; // $1.50 handling
     const PRICE_PER_PAGE_BW = 30; // $0.30
     const PRICE_PER_PAGE_COLOR = 85; // $0.85
+    
+    // --- NEW: Large Order Rules ---
+    const LARGE_ORDER_THRESHOLD = 100; // Pages
+    const LARGE_ORDER_FEE = 500; // $5.00 Surcharge
 
     const MAIL_PRICES = {
       economy: 400,       // $4.00
       priority: 1900       // $19.00
-      
     };
 
     // Determine per-page price
@@ -74,10 +77,17 @@ exports.handler = async (event) => {
     // Calculate printing total
     const printingTotal = pages * pricePerPage;
 
+    // --- NEW: Calculate Surcharge ---
+    let largeOrderFee = 0;
+    if (pages > LARGE_ORDER_THRESHOLD) {
+      largeOrderFee = LARGE_ORDER_FEE;
+    }
+
     console.log(`💰 Pricing breakdown:
       Base Fee: $${(BASE_FEE / 100).toFixed(2)}
       Per Page: $${(pricePerPage / 100).toFixed(2)} × ${pages} = $${(printingTotal / 100).toFixed(2)}
       Mail: $${(mailCost / 100).toFixed(2)}
+      Surcharge: $${(largeOrderFee / 100).toFixed(2)}
     `);
 
     // Validate all amounts are positive integers
@@ -137,8 +147,23 @@ exports.handler = async (event) => {
       quantity: 1
     });
 
+    // --- NEW: Line Item 4 (Optional): Large Order Surcharge ---
+    if (largeOrderFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Large Document Surcharge',
+            description: `Processing fee for documents over ${LARGE_ORDER_THRESHOLD} pages`
+          },
+          unit_amount: largeOrderFee
+        },
+        quantity: 1
+      });
+    }
+
     // Calculate total
-    const calculatedTotal = BASE_FEE + printingTotal + mailCost;
+    const calculatedTotal = BASE_FEE + printingTotal + mailCost + largeOrderFee;
     const MINIMUM_ORDER = 500; // $5.00
     const finalTotal = Math.max(calculatedTotal, MINIMUM_ORDER);
 
