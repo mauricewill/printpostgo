@@ -55,17 +55,15 @@ exports.handler = async (event) => {
      * 2. PRICING RULES (CENTS)
      * ==============================
      */
-    const BASE_FEE = 150; // $1.50 handling
+    const BASE_FEE = 150; // $1.50 handling/service fee
     const PRICE_PER_PAGE_BW = 30; // $0.30
     const PRICE_PER_PAGE_COLOR = 85; // $0.85
-    
-    // --- NEW: Large Order Rules ---
-    const LARGE_ORDER_THRESHOLD = 100; // Pages
-    const LARGE_ORDER_FEE = 500; // $5.00 Surcharge
+    const LEGAL_SURCHARGE = 10; // $0.10 per page for legal size
+    const LARGE_ORDER_FEE = 500; // $5.00 for orders with 10+ pages
 
     const MAIL_PRICES = {
-      economy: 400,       // $4.00
-      priority: 1900       // $19.00
+      standard: 400,      // $4.00 - Economy/Standard mail
+      large: 1900         // $19.00 - Priority/Large envelope
     };
 
     // Determine per-page price
@@ -74,20 +72,21 @@ exports.handler = async (event) => {
     // Get mail cost (with fallback)
     const mailCost = MAIL_PRICES[mailType] || MAIL_PRICES.standard;
 
+    // Calculate legal paper surcharge if applicable
+    const legalSurcharge = paperSize === 'legal' ? LEGAL_SURCHARGE * pages : 0;
+
+    // Calculate large order fee (10+ pages)
+    const largeOrderFee = pages >= 10 ? LARGE_ORDER_FEE : 0;
+
     // Calculate printing total
     const printingTotal = pages * pricePerPage;
-
-    // --- NEW: Calculate Surcharge ---
-    let largeOrderFee = 0;
-    if (pages > LARGE_ORDER_THRESHOLD) {
-      largeOrderFee = LARGE_ORDER_FEE;
-    }
 
     console.log(`💰 Pricing breakdown:
       Base Fee: $${(BASE_FEE / 100).toFixed(2)}
       Per Page: $${(pricePerPage / 100).toFixed(2)} × ${pages} = $${(printingTotal / 100).toFixed(2)}
+      Legal Surcharge: $${(legalSurcharge / 100).toFixed(2)}
+      Large Order Fee: $${(largeOrderFee / 100).toFixed(2)}
       Mail: $${(mailCost / 100).toFixed(2)}
-      Surcharge: $${(largeOrderFee / 100).toFixed(2)}
     `);
 
     // Validate all amounts are positive integers
@@ -131,15 +130,15 @@ exports.handler = async (event) => {
 
     // Line Item 3: Mailing
     const mailTypeNames = {
-      economy: 'Economy Mail',
-      priority: 'Priority Mail'
+      standard: 'Standard Mail (Economy)',
+      large: 'Priority Mail (Large Envelope)'
     };
     
     lineItems.push({
       price_data: {
         currency: 'usd',
         product_data: {
-          name: mailTypeNames[mailType] || 'Economy Mail',
+          name: mailTypeNames[mailType] || 'Standard Mail (Economy)',
           description: `${paperSize.toUpperCase()} paper`
         },
         unit_amount: mailCost
@@ -147,14 +146,29 @@ exports.handler = async (event) => {
       quantity: 1
     });
 
-    // --- NEW: Line Item 4 (Optional): Large Order Surcharge ---
+    // Line Item 4: Legal Surcharge (if applicable)
+    if (legalSurcharge > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Legal Paper Surcharge',
+            description: `${pages} page${pages > 1 ? 's' : ''} × $0.10/page`
+          },
+          unit_amount: LEGAL_SURCHARGE
+        },
+        quantity: pages
+      });
+    }
+
+    // Line Item 5: Large Order Fee (if applicable)
     if (largeOrderFee > 0) {
       lineItems.push({
         price_data: {
           currency: 'usd',
           product_data: {
-            name: 'Large Document Surcharge',
-            description: `Processing fee for documents over ${LARGE_ORDER_THRESHOLD} pages`
+            name: 'Large Order Fee',
+            description: 'Orders with 10 or more pages'
           },
           unit_amount: largeOrderFee
         },
@@ -163,7 +177,7 @@ exports.handler = async (event) => {
     }
 
     // Calculate total
-    const calculatedTotal = BASE_FEE + printingTotal + mailCost + largeOrderFee;
+    const calculatedTotal = BASE_FEE + printingTotal + legalSurcharge + largeOrderFee + mailCost;
     const MINIMUM_ORDER = 500; // $5.00
     const finalTotal = Math.max(calculatedTotal, MINIMUM_ORDER);
 
