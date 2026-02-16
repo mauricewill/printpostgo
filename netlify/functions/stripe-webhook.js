@@ -9,9 +9,14 @@ exports.handler = async (event) => {
   let stripeEvent;
 
   try {
-    // Verify webhook signature
+    // ✅ FIX: Netlify base64-encodes the body, we need to decode it first
+    const body = event.isBase64Encoded 
+      ? Buffer.from(event.body, 'base64').toString('utf8')
+      : event.body;
+
+    // Verify webhook signature with the decoded body
     stripeEvent = stripe.webhooks.constructEvent(
-      event.body,
+      body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
@@ -22,6 +27,10 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: `Webhook Error: ${err.message}` })
     };
   }
+
+
+
+
 
   // Handle successful payment
   if (stripeEvent.type === 'checkout.session.completed') {
