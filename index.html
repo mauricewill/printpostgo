@@ -1040,10 +1040,15 @@
 
                 const uniqueId = crypto.randomUUID();
                 // Ensure the path matches your Firestore security rules (artifacts/...)
-                const fileRef = ref(storage, `artifacts/${appId}/public/uploads/${uniqueId}_${window.state.file.name}`);
                 
-                await uploadBytes(fileRef, window.state.file);
-                const downloadURL = await getDownloadURL(fileRef);
+                
+                
+				const orderFileName = `${uniqueId}_${window.state.file.name}`;
+                const fileRef = ref(storage, `artifacts/${appId}/public/uploads/${orderFileName}`);
+				
+				await uploadBytes(fileRef, window.state.file);
+                const encodedPath = encodeURIComponent(`artifacts/${appId}/public/uploads/${orderFileName}`);
+                const downloadURL = `https://firebasestorage.googleapis.com/v0/b/printpostgo.firebasestorage.app/o/${encodedPath}?alt=media`;
 
                 console.log("File uploaded:", downloadURL);
 
