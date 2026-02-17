@@ -9,34 +9,43 @@ exports.handler = async (event) => {
   let stripeEvent;
 
   try {
-    // ✅ FIX: Netlify base64-encodes the body, we need to decode it first
-    const body = event.isBase64Encoded 
-      ? Buffer.from(event.body, 'base64').toString('utf8')
-      : event.body;
+    // ✅ IMPROVED FIX for Netlify: Handle both base64 and raw body
+    let body;
+    
+    if (event.isBase64Encoded) {
+      // Decode base64 body
+      body = Buffer.from(event.body, 'base64').toString('utf8');
+    } else {
+      // Use body as-is
+      body = event.body;
+    }
 
-    // Verify webhook signature with the decoded body
+    console.log('📥 Webhook received - Body type:', typeof body, 'Length:', body?.length);
+
+    // Verify webhook signature
     stripeEvent = stripe.webhooks.constructEvent(
       body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
+    
+    console.log('✅ Webhook signature verified - Event type:', stripeEvent.type);
   } catch (err) {
     console.error('❌ Webhook signature verification failed:', err.message);
+    console.error('Headers:', JSON.stringify(event.headers, null, 2));
     return { 
       statusCode: 400, 
       body: JSON.stringify({ error: `Webhook Error: ${err.message}` })
     };
   }
 
-
-
-
-
   // Handle successful payment
   if (stripeEvent.type === 'checkout.session.completed') {
     const session = stripeEvent.data.object;
     
-    // ✅ CRITICAL FIX: Read from metadata (where your JSON shows the data actually lives)
+    console.log('💳 Processing checkout.session.completed');
+    
+    // Read from metadata
     const meta = session.metadata || {};
 
     // Build complete order details
@@ -52,14 +61,14 @@ exports.handler = async (event) => {
       mailType: meta.mail_type || 'economy',
       paperSize: meta.paper_size || 'letter',
       
-      // Sender Info (Matches your JSON keys)
+      // Sender Info
       sender: {
         name: meta.sender_name || 'N/A',
         address: meta.sender_address || 'N/A',
         email: meta.customer_email || session.customer_details?.email
       },
       
-      // Recipient Info (Matches your JSON keys)
+      // Recipient Info
       recipient: {
         name: meta.recipient_name || 'N/A',
         address: meta.recipient_address || 'N/A'
@@ -114,8 +123,6 @@ exports.handler = async (event) => {
         </html>
       `;
 
-      // Define your emails as simple strings
-      // ⚠️ IMPORTANT: 'from' email must be verified in SendGrid
       const msg = {
         to: 'support@printpostgo.com', 
         from: 'maurice@printpostgo.com', 
@@ -123,8 +130,11 @@ exports.handler = async (event) => {
         html: emailHtml,
       };
 
+      console.log('📤 Attempting to send email to:', msg.to);
+      
       await sgMail.send(msg);
-      console.log(`✅ Email sent successfully to support@printpostgo.com`);
+      
+      console.log('✅ Email sent successfully to support@printpostgo.com');
 
     } catch (emailError) {
       console.error('❌ Failed to send email:', emailError.message);
@@ -132,6 +142,8 @@ exports.handler = async (event) => {
         console.error('SendGrid error details:', JSON.stringify(emailError.response.body, null, 2));
       }
     }
+  } else {
+    console.log('ℹ️ Received event type:', stripeEvent.type, '- no action taken');
   }
 
   return { 
