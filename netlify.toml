@@ -1,10 +1,2 @@
-[[redirects]]
-  from = "/.netlify/functions/stripe-webhook"
-  to = "/.netlify/functions/stripe-webhook"
-  status = 200
-  force = true
-  
 [functions]
-  # Important: This tells Netlify not to parse the body
-  # which is required for Stripe signature verification
   node_bundler = "esbuild"
