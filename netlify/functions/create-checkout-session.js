@@ -50,7 +50,7 @@ exports.handler = async (event) => {
      * 2. PRICING RULES (CENTS)
      * ==============================
      */
-    const BASE_FEE = 100;
+    const BASE_FEE = 150;
     const PRICE_PER_PAGE_BW = 30;
     const PRICE_PER_PAGE_COLOR = 85;
 
