@@ -221,7 +221,7 @@
                         <div class="flex text-yellow-400 mb-4 text-sm">
                             <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
                         </div>
-                        <p class="text-slate-600 mb-6 italic">"Needed to send a certified letter but couldn't get to the post office before work. PrintPostGo handled it perfectly with tracking."</p>
+                        <p class="text-slate-600 mb-6 italic">"Needed to send an important letter but couldn't get to the post office before work. PrintPostGo handled it perfectly — uploaded and done in minutes."</p>
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">MR</div>
                             <div>
@@ -275,17 +275,8 @@
                                 <i class="fa-solid fa-envelope"></i>
                             </div>
                             <div>
-                                <h4 class="font-bold text-slate-900">Economy (No Tracking)</h4>
-                                <p class="text-sm text-slate-500">$4.00 Shipping • Up to 10 pages</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100">
-                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm">
-                                <i class="fa-solid fa-truck-fast"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-900">Priority (With Tracking)</h4>
-                                <p class="text-sm text-slate-500">$19.00 Shipping • 1-100 pages • Tracking Included</p>
+                                <h4 class="font-bold text-slate-900">Economy Shipping</h4>
+                                <p class="text-sm text-slate-500">$4.00 Flat Rate • Up to 10 pages</p>
                             </div>
                         </div>
                     </div>
@@ -296,15 +287,15 @@
                     <div class="space-y-4">
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
                             <span class="text-slate-600 text-sm">1 Page (B&W) - Economy</span>
-                            <span class="font-bold text-slate-900">$5.30</span>
+                            <span class="font-bold text-slate-900">$5.80</span>
                         </div>
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">5 Pages (Color) - Economy</span>
-                            <span class="font-bold text-slate-900">$9.25</span>
+                            <span class="text-slate-600 text-sm">5 Pages (B&W) - Economy</span>
+                            <span class="font-bold text-slate-900">$7.00</span>
                         </div>
                         <div class="flex justify-between items-center py-3">
-                            <span class="text-slate-600 text-sm">20 Pages (B&W) - Priority</span>
-                            <span class="font-bold text-slate-900">$26.50</span>
+                            <span class="text-slate-600 text-sm">5 Pages (Color) - Economy</span>
+                            <span class="font-bold text-slate-900">$9.75</span>
                         </div>
                     </div>
                 </div>
@@ -522,28 +513,23 @@
                                 </div>
                             </div>
 
-                            <!-- Right Column: Envelope Type (Renamed & Date Logic) -->
+                            <!-- Right Column: Shipping -->
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-3">Mailing Speed</label>
-                                <div class="space-y-3">
-                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 transition-all" id="label-standard">
-                                        <input type="radio" name="mailType" value="standard" checked class="mt-1 mr-3 text-brand-600 focus:ring-brand-500" onchange="calculateTotal()">
-                                        <div>
-                                            <span class="block text-sm font-semibold text-slate-900">Economy (No Tracking)</span>
-                                            <span class="block text-xs text-slate-500">Up to 10 pages • $4.00</span>
-                                            <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-standard">Est. Arrival: ...</span>
-                                        </div>
-                                    </label>
-                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 transition-all" id="label-large">
-                                        <input type="radio" name="mailType" value="large" class="mt-1 mr-3 text-brand-600 focus:ring-brand-500" onchange="calculateTotal()">
-                                        <div>
-                                            <span class="block text-sm font-semibold text-slate-900">Priority (With Tracking)</span>
-                                            <span class="block text-xs text-slate-500">1-100 pages • $19.00</span>
-                                            <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-priority">Est. Arrival: ...</span>
-                                        </div>
-                                    </label>
+                                <label class="block text-sm font-medium text-slate-700 mb-3">Shipping Method</label>
+                                <div class="flex items-start p-4 border border-brand-600 rounded-lg bg-brand-50">
+                                    <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm mr-3 flex-shrink-0 mt-0.5">
+                                        <i class="fa-solid fa-envelope text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <span class="block text-sm font-semibold text-slate-900">Economy Shipping</span>
+                                        <span class="block text-xs text-slate-500">Up to 10 pages • $4.00 flat rate</span>
+                                        <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-standard">Est. Arrival: ...</span>
+                                    </div>
+                                    <span class="ml-auto text-brand-800 font-bold text-sm">$4.00</span>
                                 </div>
-                                <p id="envelope-warning" class="text-xs text-amber-600 mt-2 hidden"><i class="fa-solid fa-triangle-exclamation"></i> Documents over 10 pages must use Priority Mail.</p>
+                                <p id="envelope-warning" class="text-xs text-amber-600 mt-2 hidden"><i class="fa-solid fa-triangle-exclamation"></i> Economy shipping supports up to 10 pages. Please reduce your document size.</p>
+                                <!-- Hidden input so form still submits mailType -->
+                                <input type="hidden" name="mailType" value="economy">
                             </div>
                         </div>
 
@@ -926,38 +912,21 @@
         
         // Attaching to window for HTML inline event handlers
         window.enforceEnvelopeRules = function() {
-            const stdRadio = document.querySelector('input[name="mailType"][value="standard"]');
-            const lrgRadio = document.querySelector('input[name="mailType"][value="large"]');
-            const stdLabel = document.getElementById('label-standard');
             const warning = document.getElementById('envelope-warning');
-
             if (window.state.pageCount > 10) {
-                window.state.mailType = 'large';
-                lrgRadio.checked = true;
-                stdRadio.disabled = true;
-                stdLabel.classList.add('opacity-50', 'cursor-not-allowed');
                 warning.classList.remove('hidden');
             } else {
-                stdRadio.disabled = false;
-                stdLabel.classList.remove('opacity-50', 'cursor-not-allowed');
                 warning.classList.add('hidden');
             }
         }
 
         window.calculateTotal = function() {
             window.state.printType = document.querySelector('input[name="printType"]:checked').value;
-            window.state.mailType = document.querySelector('input[name="mailType"]:checked').value;
+            window.state.mailType = 'economy';
             window.state.paperSize = document.querySelector('input[name="paperSize"]:checked').value;
 
-            if (window.state.pageCount > 10 && window.state.mailType === 'standard') {
-                enforceEnvelopeRules(); 
-                window.state.mailType = 'large';
-            }
-
             const stdDate = getDeliveryDate(5);
-            const prioDate = getDeliveryDate(2);
             document.getElementById('date-standard').innerHTML = `Est. Arrival: ${stdDate}`;
-            document.getElementById('date-priority').innerHTML = `Est. Arrival: ${prioDate}`;
 
             const printRate = window.state.printType === 'bw' ? window.PRICES.bw : window.PRICES.color;
             let printCost = window.state.pageCount * printRate;
@@ -967,26 +936,23 @@
                 legalCost = window.state.pageCount * window.PRICES.legalSurcharge;
             }
             
-            // --- NEW: Large Order Surcharge Calculation ---
+            // Large Order Surcharge Calculation
             let largeOrderFee = 0;
             if (window.state.pageCount > 100) {
                 largeOrderFee = window.PRICES.largeOrderFee;
-                // Show Summary Row
                 document.getElementById('summary-large-order-row').classList.remove('hidden');
                 document.getElementById('summary-large-order-row').classList.add('flex');
-                // Show Warning Message
                 document.getElementById('large-order-warning').classList.remove('hidden');
             } else {
-                // Hide Summary Row
                 document.getElementById('summary-large-order-row').classList.add('hidden');
                 document.getElementById('summary-large-order-row').classList.remove('flex');
-                // Hide Warning Message
-                document.getElementById('large-order-warning').classList.add('hidden');
+                if (window.state.pageCount <= 10) {
+                    document.getElementById('large-order-warning').classList.add('hidden');
+                }
             }
 
-            const shippingCost = window.state.mailType === 'standard' ? window.PRICES.standardEnv : window.PRICES.largeEnv;
+            const shippingCost = window.PRICES.standardEnv;
             
-            // Add largeOrderFee to Total
             const total = printCost + legalCost + shippingCost + window.PRICES.serviceFee + largeOrderFee;
 
             document.getElementById('summary-page-count').textContent = window.state.pageCount;
@@ -1013,6 +979,8 @@
             } else {
                 document.getElementById('submit-btn').disabled = true;
             }
+
+            enforceEnvelopeRules();
         }
 
         window.handleFormSubmit = async function(e) {
@@ -1071,7 +1039,7 @@
                 const payload = {
                     pageCount: parseInt(window.state.pageCount), // Explicitly force integer
                     printType: window.state.printType,
-                    mailType: window.state.mailType,
+                    mailType: 'economy', // Lob dev plan: always economy / USPS First Class
                     paperSize: window.state.paperSize,
                     customerEmail: document.querySelector('input[name="senderEmail"]').value,
                     fileUrl: downloadURL, // SENDING THE URL HERE
@@ -1168,7 +1136,7 @@
         window.state = {
             pageCount: 0,
             printType: 'bw',
-            mailType: 'standard',
+            mailType: 'economy', // Always economy — Lob dev plan only supports USPS First Class
             paperSize: 'letter',
             file: null
         };
