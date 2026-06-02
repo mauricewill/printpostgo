@@ -6,10 +6,11 @@
  *   2. Submit the letter to Lob.com for automated printing & mailing
  *   3. Send a SendGrid notification email to the operator
  *
- * IMPORTANT: Stripe requires a 200 response quickly (within ~30s) or it
- * will retry. We respond 200 FIRST, then run Lob + email in the background
- * using a fire-and-forget pattern. For Netlify functions this is safe because
- * the function stays alive until the event loop is empty.
+ * IMPORTANT: We await both Lob and SendGrid before returning 200 to Stripe.
+ * Stripe allows up to 30s for a response. Lob + SendGrid typically finish in
+ * 1-3s, well within the Netlify 10s default timeout. Awaiting is intentional —
+ * it guarantees all console.log statements appear in Netlify function logs,
+ * which would be silently swallowed if we returned early (fire-and-forget).
  *
  * Idempotency: Lob's Idempotency-Key header (set to the Stripe session ID)
  * prevents duplicate letters if Stripe retries the webhook.
@@ -77,31 +78,33 @@ exports.handler = async (event) => {
 
   console.log('✅ Order details parsed — session:', orderDetails.sessionId);
 
-  // ── 4. Fire-and-forget: Lob + SendGrid ──────────────────────────────────
-  // We don't await this block so Stripe gets a fast 200 response.
-  // Both tasks run concurrently via Promise.allSettled so neither blocks the other.
-  const fulfillmentPromise = (async () => {
-    const results = await Promise.allSettled([
-      sendToLob(orderDetails, session.id),
-      Promise.resolve(null), // placeholder — email sent after we know Lob result
-    ]);
+  // ── 4. Await Lob + SendGrid before returning ────────────────────────────
+  // Unlike the original fire-and-forget approach, we now await all work
+  // BEFORE returning to Netlify. This is safe because:
+  //   - Netlify Functions have a 10s default timeout (26s on paid plans)
+  //   - Lob + SendGrid typically complete in 1-3 seconds combined
+  //   - Stripe waits up to 30s for a response before marking a delivery failed
+  // Awaiting ensures logs appear in Netlify and nothing gets cut off silently.
 
-    const lobResult  = results[0];
-    let   lobId      = null;
-    let   lobSuccess = false;
-    let   lobError   = null;
+  let lobId      = null;
+  let lobSuccess = false;
+  let lobError   = null;
 
-    if (lobResult.status === 'fulfilled') {
-      lobSuccess = true;
-      lobId      = lobResult.value.lobId;
-      console.log('✅ Lob letter submitted:', lobId);
-    } else {
-      lobError = lobResult.reason?.message || 'Unknown Lob error';
-      console.error('❌ Lob submission failed:', lobError);
-    }
+  // ── Step A: Call Lob ────────────────────────────────────────────────────
+  try {
+    console.log('📮 Calling Lob API...');
+    const lobResult = await sendToLob(orderDetails, session.id);
+    lobSuccess = true;
+    lobId      = lobResult.lobId;
+    console.log('✅ Lob letter submitted:', lobId);
+    console.log('📅 Expected delivery:', lobResult.expectedDeliveryDate);
+  } catch (err) {
+    lobError = err.message || 'Unknown Lob error';
+    console.error('❌ Lob submission failed:', lobError);
+  }
 
-    // ── 5. Send operator notification email ───────────────────────────────
-    try {
+  // ── Step B: Send operator notification email ────────────────────────────
+  try {
       const isTestMode = (process.env.LOB_API_KEY || '').startsWith('test_');
 
       // Status badge for the email subject/header
@@ -225,18 +228,15 @@ exports.handler = async (event) => {
       await sgMail.send(msg);
       console.log('✅ Notification email sent');
 
-    } catch (emailError) {
-      console.error('❌ Email failed:', emailError.message);
-      if (emailError.response) {
-        console.error('SendGrid error detail:', JSON.stringify(emailError.response.body));
-      }
+  } catch (emailError) {
+    console.error('❌ Email failed:', emailError.message);
+    if (emailError.response) {
+      console.error('SendGrid error detail:', JSON.stringify(emailError.response.body));
     }
-  })();
+  }
 
-  // Allow the promise to run in the background — log unhandled rejections
-  fulfillmentPromise.catch(err => console.error('❌ Fulfillment pipeline error:', err));
-
-  // ── 6. Respond 200 to Stripe immediately ──────────────────────────────
+  // ── 5. Return 200 to Stripe after all work is complete ──────────────────
+  console.log('✅ Webhook handler complete — returning 200');
   return {
     statusCode: 200,
     body: JSON.stringify({ received: true }),
