@@ -159,7 +159,6 @@
                 <span class="text-brand-800 font-semibold text-sm tracking-wide uppercase">Why Use PrintPostGo</span>
             </div>
             <div class="grid md:grid-cols-3 gap-8 text-center">
-                <!-- ADDED spotlight-group class to these cards -->
                 <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors spotlight-group">
                     <div class="relative z-10">
                         <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
@@ -251,7 +250,7 @@
         </div>
     </section>
 
-    <!-- Pricing Grid (Changed background to white for banding effect) -->
+    <!-- Pricing Grid -->
     <section id="pricing" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
@@ -275,8 +274,8 @@
                                 <i class="fa-solid fa-envelope"></i>
                             </div>
                             <div>
-                                <h4 class="font-bold text-slate-900">Economy Shipping</h4>
-                                <p class="text-sm text-slate-500">$4.00 Flat Rate • Up to 10 pages</p>
+                                <h4 class="font-bold text-slate-900">USPS First Class</h4>
+                                <p class="text-sm text-slate-500">$4.00 Flat Rate • Up to 6 pages (+$2.50 surcharge over 6 pages)</p>
                             </div>
                         </div>
                     </div>
@@ -286,16 +285,20 @@
                     <h3 class="font-header font-bold text-xl mb-6">Quick Estimator</h3>
                     <div class="space-y-4">
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">1 Page (B&W) - Economy</span>
+                            <span class="text-slate-600 text-sm">1 Page (B&W) - USPS First Class</span>
                             <span class="font-bold text-slate-900">$5.80</span>
                         </div>
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">5 Pages (B&W) - Economy</span>
+                            <span class="text-slate-600 text-sm">5 Pages (B&W) - USPS First Class</span>
                             <span class="font-bold text-slate-900">$7.00</span>
                         </div>
+                        <div class="flex justify-between items-center py-3 border-b border-slate-100">
+                            <span class="text-slate-600 text-sm">8 Pages (B&W) - USPS First Class</span>
+                            <span class="font-bold text-slate-900">$10.40</span>
+                        </div>
                         <div class="flex justify-between items-center py-3">
-                            <span class="text-slate-600 text-sm">5 Pages (Color) - Economy</span>
-                            <span class="font-bold text-slate-900">$9.75</span>
+                            <span class="text-slate-600 text-sm">5 Pages (Color) - USPS First Class</span>
+                            <span class="font-bold text-slate-900 font-header text-slate-900">$9.75</span>
                         </div>
                     </div>
                 </div>
@@ -332,7 +335,7 @@
                 <!-- Left Column: Inputs -->
                 <div class="lg:col-span-2 space-y-8">
                     
-                    <!-- 1. Document Upload (Updated with Preview) -->
+                    <!-- 1. Document Upload -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                         <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
                             <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 1</span> Upload Document
@@ -359,7 +362,7 @@
                                     </div>
                                     <p id="filename-display" class="text-sm font-medium text-slate-900 truncate max-w-xs"></p>
                                     
-                                    <!-- NEW: Large Order Warning -->
+                                    <!-- Large Order Warning -->
                                     <p id="large-order-warning" class="hidden text-xs text-amber-600 font-bold mt-2 bg-amber-50 px-3 py-1 rounded border border-amber-200">
                                         <i class="fa-solid fa-triangle-exclamation"></i> Orders over 100 pages incur a $5.00 processing fee.
                                     </p>
@@ -459,7 +462,7 @@
                         </div>
                     </div>
 
-                    <!-- 3. Configuration (Renamed Options) -->
+                    <!-- 3. Configuration -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                         <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
                             <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 3</span> Print & Mail Options
@@ -491,24 +494,17 @@
                                     </div>
                                 </div>
 
-                                <!-- Paper Size (NEW) -->
+                                <!-- Paper Size (Static elegant layout, Legal removed) -->
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-3">Paper Size</label>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <label class="cursor-pointer relative">
-                                            <input type="radio" name="paperSize" value="letter" checked class="peer sr-only" onchange="calculateTotal()">
-                                            <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
-                                                <span class="text-sm font-semibold block">Letter (8.5x11)</span>
-                                                <span class="block text-xs text-slate-500">Standard</span>
-                                            </div>
-                                        </label>
-                                        <label class="cursor-pointer relative">
-                                            <input type="radio" name="paperSize" value="legal" class="peer sr-only" onchange="calculateTotal()">
-                                            <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
-                                                <span class="text-sm font-semibold block">Legal (8.5x14)</span>
-                                                <span class="block text-xs text-slate-500">+$0.10/page</span>
-                                            </div>
-                                        </label>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Paper Size & Specifications</label>
+                                    <div class="flex items-center gap-3 p-3.5 border rounded-lg bg-slate-50 border-slate-200">
+                                        <div class="text-slate-500 bg-white border rounded p-1.5 flex items-center justify-center">
+                                            <i class="fa-solid fa-file-invoice text-lg text-slate-600"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-semibold text-slate-900 block">Letter Size (8.5" x 11")</span>
+                                            <span class="block text-xs text-slate-500">Standard business-grade 20lb white paper</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -521,14 +517,16 @@
                                         <i class="fa-solid fa-envelope text-sm"></i>
                                     </div>
                                     <div>
-                                        <span class="block text-sm font-semibold text-slate-900">Economy Shipping</span>
-                                        <span class="block text-xs text-slate-500">Up to 10 pages • $4.00 flat rate</span>
+                                        <span class="block text-sm font-semibold text-slate-900">USPS First Class</span>
+                                        <span class="block text-xs text-slate-500">Up to 6 pages included • $4.00 flat rate</span>
                                         <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-standard">Est. Arrival: ...</span>
                                     </div>
-                                    <span class="ml-auto text-brand-800 font-bold text-sm">$4.00</span>
+                                    <span class="ml-auto text-brand-800 font-bold text-sm" id="shipping-rate-display">$4.00</span>
                                 </div>
-                                <p id="envelope-warning" class="text-xs text-amber-600 mt-2 hidden"><i class="fa-solid fa-triangle-exclamation"></i> Economy shipping supports up to 10 pages. Please reduce your document size.</p>
-                                <!-- Hidden input so form still submits mailType -->
+                                <p id="envelope-warning" class="text-xs text-amber-600 mt-2 hidden">
+                                    <i class="fa-solid fa-circle-info"></i> USPS First Class has a standard 6-page limit. A $2.50 fee has been added for extra envelope handling.
+                                </p>
+                                <!-- Hidden input for consistency -->
                                 <input type="hidden" name="mailType" value="economy">
                             </div>
                         </div>
@@ -557,12 +555,14 @@
                                     <span class="text-slate-600">Pages (<span id="summary-page-count">0</span>)</span>
                                     <span class="font-medium text-slate-900" id="summary-print-cost">$0.00</span>
                                 </div>
-                                <div class="flex justify-between text-sm" id="legal-surcharge-row">
-                                    <span class="text-slate-600">Legal Size Surcharge</span>
-                                    <span class="font-medium text-slate-900" id="summary-legal-cost">$0.00</span>
+                                
+                                <!-- Overweight Surcharge Surcharge Row -->
+                                <div class="flex justify-between text-sm hidden text-amber-700 bg-amber-50 -mx-6 px-6 py-2 border-y border-amber-100" id="summary-overweight-row">
+                                    <span>Over 6 Pages Fee</span>
+                                    <span class="font-medium" id="summary-overweight-cost">$2.50</span>
                                 </div>
                                 
-                                <!-- NEW: Large Order Surcharge Row -->
+                                <!-- Large Order Surcharge Row -->
                                 <div class="flex justify-between text-sm hidden text-amber-700 bg-amber-50 -mx-6 px-6 py-2 border-y border-amber-100" id="summary-large-order-row">
                                     <span>Large Order Fee (>100 pgs)</span>
                                     <span class="font-medium" id="summary-large-order-cost">$5.00</span>
@@ -573,7 +573,7 @@
                                     <span class="font-medium text-slate-900">$1.50</span>
                                 </div>
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-slate-600">Shipping</span>
+                                    <span class="text-slate-600">Shipping (USPS First Class)</span>
                                     <span class="font-medium text-slate-900" id="summary-shipping-cost">$4.00</span>
                                 </div>
                                 
@@ -812,6 +812,29 @@
         </div>
     </div>
 
+    <!-- Custom Dialog Modal (Replaces standard window.alert) -->
+    <div id="custom-alert-modal" class="fixed inset-0 z-[110] hidden" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" id="custom-alert-backdrop" onclick="closeCustomAlert()"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none flex items-center justify-center p-4">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-xl transition-all sm:w-full sm:max-w-md pointer-events-auto border border-slate-100" id="custom-alert-panel">
+                <div class="flex items-start gap-4">
+                    <div id="custom-alert-icon-container" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"></div>
+                    <div class="flex-1">
+                        <h3 id="custom-alert-title" class="text-base font-bold text-slate-900 leading-6">Notification</h3>
+                        <div class="mt-2">
+                            <p id="custom-alert-message" class="text-sm text-slate-500 whitespace-pre-wrap"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button type="button" onclick="closeCustomAlert()" class="rounded-lg bg-brand-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-900 transition-colors">
+                        Okay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Logic Script -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
@@ -819,7 +842,6 @@
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
         // --- Firebase Init ---
-        // Updated with your specific project credentials
         const firebaseConfig = {
             apiKey: "AIzaSyDT_UTqCO2nNDwtjaxl-UiCaoAZXDnWqME",
             authDomain: "printpostgo.firebaseapp.com",
@@ -830,12 +852,10 @@
             measurementId: "G-R6CG4P9C7J"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const storage = getStorage(app);
 
-        // App ID for storage organization (defaults if not provided by environment)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'printpostgo-web';
 
         // --- Logic: File Handling & Upload ---
@@ -852,13 +872,11 @@
             document.getElementById('upload-error').classList.add('hidden');
             window.state.file = file;
 
-            // UI Updates
             document.getElementById('upload-prompt').classList.add('hidden');
             document.getElementById('file-info').classList.remove('hidden');
             document.getElementById('filename-display').textContent = file.name;
             document.getElementById('page-count-display').textContent = "Scanning...";
             
-            // Read PDF and Count Pages
             const fileReader = new FileReader();
             fileReader.onload = function() {
                 const typedarray = new Uint8Array(this.result);
@@ -867,7 +885,6 @@
                     window.state.pageCount = pdf.numPages;
                     document.getElementById('page-count-display').textContent = `${window.state.pageCount} Pages detected`;
                     
-                    // Render First Page Preview
                     pdf.getPage(1).then(function(page) {
                         var scale = 1.0;
                         var viewport = page.getViewport({scale: scale});
@@ -883,7 +900,6 @@
                         page.render(renderContext);
                     });
 
-                    // Trigger Auto-Logic for Envelopes
                     enforceEnvelopeRules();
                     calculateTotal();
                 }, function (reason) {
@@ -908,12 +924,9 @@
         }
 
         // --- Logic: Form Rules & Calculation ---
-        // (Moved these to global window scope so module script can access them or keep in module scope if attached to window)
-        
-        // Attaching to window for HTML inline event handlers
         window.enforceEnvelopeRules = function() {
             const warning = document.getElementById('envelope-warning');
-            if (window.state.pageCount > 10) {
+            if (window.state.pageCount > 6) {
                 warning.classList.remove('hidden');
             } else {
                 warning.classList.add('hidden');
@@ -923,7 +936,7 @@
         window.calculateTotal = function() {
             window.state.printType = document.querySelector('input[name="printType"]:checked').value;
             window.state.mailType = 'economy';
-            window.state.paperSize = document.querySelector('input[name="paperSize"]:checked').value;
+            window.state.paperSize = 'letter';
 
             const stdDate = getDeliveryDate(5);
             document.getElementById('date-standard').innerHTML = `Est. Arrival: ${stdDate}`;
@@ -931,9 +944,17 @@
             const printRate = window.state.printType === 'bw' ? window.PRICES.bw : window.PRICES.color;
             let printCost = window.state.pageCount * printRate;
             
-            let legalCost = 0;
-            if (window.state.paperSize === 'legal') {
-                legalCost = window.state.pageCount * window.PRICES.legalSurcharge;
+            // Overweight Fee over 6 pages
+            let overweightCost = 0;
+            if (window.state.pageCount > 6) {
+                overweightCost = window.PRICES.overweightFee;
+                document.getElementById('summary-overweight-row').classList.remove('hidden');
+                document.getElementById('summary-overweight-row').classList.add('flex');
+                document.getElementById('envelope-warning').classList.remove('hidden');
+            } else {
+                document.getElementById('summary-overweight-row').classList.add('hidden');
+                document.getElementById('summary-overweight-row').classList.remove('flex');
+                document.getElementById('envelope-warning').classList.add('hidden');
             }
             
             // Large Order Surcharge Calculation
@@ -946,29 +967,20 @@
             } else {
                 document.getElementById('summary-large-order-row').classList.add('hidden');
                 document.getElementById('summary-large-order-row').classList.remove('flex');
-                if (window.state.pageCount <= 10) {
+                if (window.state.pageCount <= 6) {
                     document.getElementById('large-order-warning').classList.add('hidden');
                 }
             }
 
             const shippingCost = window.PRICES.standardEnv;
             
-            const total = printCost + legalCost + shippingCost + window.PRICES.serviceFee + largeOrderFee;
+            const total = printCost + overweightCost + shippingCost + window.PRICES.serviceFee + largeOrderFee;
 
             document.getElementById('summary-page-count').textContent = window.state.pageCount;
             document.getElementById('summary-print-cost').textContent = formatMoney(printCost);
             document.getElementById('summary-shipping-cost').textContent = formatMoney(shippingCost);
             document.getElementById('summary-large-order-cost').textContent = formatMoney(largeOrderFee);
-            
-            const legalRow = document.getElementById('legal-surcharge-row');
-            if (window.state.paperSize === 'legal' && window.state.pageCount > 0) {
-                legalRow.classList.remove('hidden');
-                legalRow.classList.add('flex');
-                document.getElementById('summary-legal-cost').textContent = formatMoney(legalCost);
-            } else {
-                legalRow.classList.add('hidden');
-                legalRow.classList.remove('flex');
-            }
+            document.getElementById('summary-overweight-cost').textContent = formatMoney(overweightCost);
             
             const totalEl = document.getElementById('final-total');
             totalEl.textContent = formatMoney(total);
@@ -987,7 +999,7 @@
             e.preventDefault();
 
             if (!window.state.file) {
-                alert("Please upload a PDF first.");
+                window.showAlert("Upload Required", "Please upload a PDF document before moving to checkout.", "warning");
                 return;
             }
 
@@ -1001,15 +1013,11 @@
                 loadingText.textContent = "Uploading Document...";
                 loadingSub.textContent = "Encrypting and storing securely...";
 
-                // Ensure Auth for Firestore/Storage rules
                 if (!auth.currentUser) {
                     await signInAnonymously(auth);
                 }
 
                 const uniqueId = crypto.randomUUID();
-                // Ensure the path matches your Firestore security rules (artifacts/...)
-                
-                
                 
 				const orderFileName = `${uniqueId}_${window.state.file.name}`;
                 const fileRef = ref(storage, `artifacts/${appId}/public/uploads/${orderFileName}`);
@@ -1037,19 +1045,19 @@
                 const fullRecipientAddress = `${recipientStreet}, ${recipientCity}, ${recipientState} ${recipientZip}`;
 
                 const payload = {
-                    pageCount: parseInt(window.state.pageCount), // Explicitly force integer
+                    pageCount: parseInt(window.state.pageCount),
                     printType: window.state.printType,
-                    mailType: 'economy', // Lob dev plan: always economy / USPS First Class
+                    mailType: 'economy', // Retaining 'economy' parameter compatibility for the backend endpoint
                     paperSize: window.state.paperSize,
                     customerEmail: document.querySelector('input[name="senderEmail"]').value,
-                    fileUrl: downloadURL, // SENDING THE URL HERE
+                    fileUrl: downloadURL,
                     metadata: {
                         sender: document.querySelector('input[name="senderName"]').value,
                         sender_address: fullSenderAddress,
                         recipient: document.querySelector('input[name="recipientName"]').value,
                         recipient_address: fullRecipientAddress,
                         paper_size: window.state.paperSize,
-                        file_url: downloadURL // Redundant but good for visibility in Stripe Dashboard
+                        file_url: downloadURL
                     }
                 };
 
@@ -1062,7 +1070,6 @@
                     });
 
                     if (!response.ok) {
-                        // If 404, it means the endpoint is missing (Localhost/Test env)
                         if (response.status === 404) {
                             throw new Error('BACKEND_NOT_FOUND');
                         }
@@ -1073,17 +1080,19 @@
                     window.location.href = url;
 
                 } catch (backendError) {
-                    // FALLBACK: If backend is missing (Localhost), simulate success for testing
                     if (backendError.message === 'BACKEND_NOT_FOUND' || backendError.message === 'Failed to fetch') {
                         console.warn("Backend not found. Running in TEST MODE.");
                         
-                        // Simulate network delay
                         await new Promise(resolve => setTimeout(resolve, 1500));
                         
                         document.getElementById('loading-overlay').classList.add('hidden');
-                        alert(`TEST MODE SUCCESS:\n\nBackend endpoint not found (expected on localhost).\n\nIn a live production app, this would redirect to Stripe.\n\nFile URL: ${downloadURL}\nTotal: ${document.getElementById('final-total').textContent}`);
+                        
+                        window.showAlert(
+                            "Test Mode Success", 
+                            `In a live production environment, this would securely redirect you to Stripe Checkout.\n\nFile URL: ${downloadURL}\nTotal: ${document.getElementById('final-total').textContent}`, 
+                            "success"
+                        );
                     } else {
-                        // Real error (e.g. 500 server error), re-throw
                         throw backendError;
                     }
                 }
@@ -1091,7 +1100,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('loading-overlay').classList.add('hidden');
-                alert('Service error: ' + error.message);
+                window.showAlert("Service Error", "An issue occurred while creating your session: " + error.message, "error");
             }
         }
 
@@ -1099,10 +1108,9 @@
 
     <!-- Global State & Non-Module Helpers -->
     <script>
-        // --- Modal Logic (Prioritized) ---
+        // --- Modal Logic ---
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
-            // Small timeout to allow the browser to register the class removal before animating opacity
             setTimeout(() => {
                 document.getElementById(id + '-backdrop').classList.remove('opacity-0');
                 document.getElementById(id + '-panel').classList.remove('opacity-0', 'scale-95');
@@ -1116,10 +1124,9 @@
             document.getElementById(id + '-panel').classList.add('opacity-0', 'scale-95');
             setTimeout(() => {
                 document.getElementById(id).classList.add('hidden');
-            }, 300); // Matches default transition duration
+            }, 300);
         }
 
-        // Explicitly attach to window so inline onclick handlers work
         window.openPrivacyModal = (e) => { if(e) e.preventDefault(); openModal('privacy-modal'); };
         window.closePrivacyModal = () => closeModal('privacy-modal');
         
@@ -1128,28 +1135,60 @@
         
         window.openContactModal = (e) => { if(e) e.preventDefault(); openModal('contact-modal'); };
         window.closeContactModal = () => closeModal('contact-modal');
+
+        // Alert Utility (Avoids window.alert)
+        window.showAlert = function(title, message, type = 'info') {
+            const modal = document.getElementById('custom-alert-modal');
+            const titleEl = document.getElementById('custom-alert-title');
+            const msgEl = document.getElementById('custom-alert-message');
+            const iconContainer = document.getElementById('custom-alert-icon-container');
+
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+
+            iconContainer.className = "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ";
+            
+            if (type === 'error') {
+                iconContainer.classList.add('bg-red-50', 'text-red-600');
+                iconContainer.innerHTML = '<i class="fa-solid fa-circle-exclamation text-lg"></i>';
+            } else if (type === 'success') {
+                iconContainer.classList.add('bg-green-50', 'text-green-600');
+                iconContainer.innerHTML = '<i class="fa-solid fa-circle-check text-lg"></i>';
+            } else if (type === 'warning') {
+                iconContainer.classList.add('bg-amber-50', 'text-amber-600');
+                iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-lg"></i>';
+            } else {
+                iconContainer.classList.add('bg-blue-50', 'text-brand-800');
+                iconContainer.innerHTML = '<i class="fa-solid fa-info text-lg"></i>';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        window.closeCustomAlert = function() {
+            document.getElementById('custom-alert-modal').classList.add('hidden');
+        }
     
-        // Setup PDF.js worker (Global scope)
+        // Setup PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // State Management (Global)
+        // State Management
         window.state = {
             pageCount: 0,
             printType: 'bw',
-            mailType: 'economy', // Always economy — Lob dev plan only supports USPS First Class
+            mailType: 'economy', 
             paperSize: 'letter',
             file: null
         };
 
-        // Pricing Constants (Global)
+        // Pricing Constants
         window.PRICES = {
             bw: 0.30,
             color: 0.85,
-            legalSurcharge: 0.10,
             standardEnv: 4.00,
-            largeEnv: 19.00,
             serviceFee: 1.50,
-            largeOrderFee: 5.00 // NEW: Surcharge amount
+            overweightFee: 2.50, // Fee for >6 pages
+            largeOrderFee: 5.00
         };
 
         function getDeliveryDate(daysToAdd) {
@@ -1162,37 +1201,30 @@
             return '$' + amount.toFixed(2);
         }
 
-        // Initialize (Needs to wait for DOM or just run)
+        // Initialize Spotlights and defaults
         window.addEventListener('DOMContentLoaded', () => {
             if(window.calculateTotal) window.calculateTotal();
-            if(window.initSpotlightEffect) window.initSpotlightEffect(); // Initialize Spotlights
+            if(window.initSpotlightEffect) window.initSpotlightEffect();
         });
         
-        // --- Spotlight Effect Logic (Vanilla JS implementation of React component) ---
         window.initSpotlightEffect = function() {
             const cards = document.querySelectorAll('.spotlight-group');
             
             cards.forEach(card => {
-                // Create spotlight element dynamically
                 const light = document.createElement('div');
-                // Tailwind classes to match React snippet: rounded-full bg-[radial-gradient...] blur-xl
-                // Adjusted colors to match brand blue tint (brand-600/10) instead of generic zinc
                 light.className = "pointer-events-none absolute w-[300px] h-[300px] rounded-full bg-brand-600/10 blur-3xl opacity-0 transition-opacity duration-300";
                 
-                // Initial styles for GSAP
                 light.style.transform = "translate(-50%, -50%)";
-                light.style.zIndex = "0"; // Ensure it stays behind content if content has z-index
+                light.style.zIndex = "0"; 
                 light.style.left = "0";
                 light.style.top = "0";
                 
-                // Prepare container
                 if (getComputedStyle(card).position === 'static') {
                     card.style.position = 'relative';
                 }
                 card.style.overflow = 'hidden';
-                card.prepend(light); // Add to DOM
+                card.prepend(light);
 
-                // GSAP QuickSetters for high-performance mouse tracking
                 const setX = gsap.quickSetter(light, "x", "px");
                 const setY = gsap.quickSetter(light, "y", "px");
 
