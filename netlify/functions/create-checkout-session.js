@@ -4,14 +4,14 @@
  * Creates a Stripe Checkout session with all order data embedded in metadata.
  * The stripe-webhook.js function reads this metadata to fulfill the order.
  *
- * Pricing (must match frontend display in index_for_lob.html):
- *   B&W printing:    $0.30 / page
- *   Color printing:  $0.85 / page
- *   Legal surcharge: $0.10 / page  (added when paperSize === 'legal')
- *   Economy shipping: $4.00 flat
- *   Service fee:      $1.50
- *   Large order fee:  $5.00  (when pageCount > 100)
- *   Minimum order:    $5.00
+ * Pricing (must match frontend display in index.html):
+ *   B&W printing:         $0.30 / page
+ *   Color printing:       $0.85 / page
+ *   USPS First Class:     $4.00 flat (covers up to 6 pages)
+ *   Overweight surcharge: $2.50 (added when pageCount > 6)
+ *   Service fee:          $1.50
+ *   Large order fee:      $5.00 (when pageCount > 100)
+ *   Minimum order:        $5.00
  * ──────────────────────────────────────────────────────────────────────────
  */
 
@@ -39,10 +39,11 @@ exports.handler = async (event) => {
       fileUrl,
       pageCount,
       printType    = 'bw',
-      paperSize    = 'letter',
       customerEmail = '',
       metadata     = {},
     } = data;
+
+    const paperSize = 'letter'; // Standard letter size default
 
     // Normalize mailType: frontend sends 'standard', we treat it as 'economy'
     // This also handles any legacy 'economy' value gracefully
@@ -61,16 +62,16 @@ exports.handler = async (event) => {
     // ── Pricing (all in cents) ──────────────────────────────────────────────
     const PRICE_BW           = 30;   // $0.30/page
     const PRICE_COLOR        = 85;   // $0.85/page
-    const PRICE_LEGAL_SUR    = 10;   // $0.10/page surcharge
-    const PRICE_SHIPPING     = 400;  // $4.00 flat
+    const PRICE_SHIPPING     = 400;  // $4.00 flat USPS First Class (up to 6 pages)
+    const PRICE_OVERWEIGHT   = 250;  // $2.50 surcharge for letters over 6 pages
     const PRICE_SERVICE_FEE  = 150;  // $1.50
     const PRICE_LARGE_ORDER  = 500;  // $5.00 when > 100 pages
     const MINIMUM_ORDER      = 500;  // $5.00 minimum
 
     const pricePerPage   = printType === 'color' ? PRICE_COLOR : PRICE_BW;
-    const legalSurcharge = paperSize === 'legal' ? PRICE_LEGAL_SUR : 0;
+    const printTotal     = pages * pricePerPage;
+    const overweightFee  = pages > 6 ? PRICE_OVERWEIGHT : 0;
     const largeOrderFee  = pages > 100 ? PRICE_LARGE_ORDER : 0;
-    const printTotal     = pages * (pricePerPage + legalSurcharge);
 
     // ── Build Stripe Line Items ─────────────────────────────────────────────
     const lineItems = [];
@@ -87,31 +88,46 @@ exports.handler = async (event) => {
 
     // Printing cost
     const printLabel = printType === 'color' ? 'COLOR' : 'B&W';
-    const paperLabel = paperSize === 'legal'  ? 'Legal (8.5×14)' : 'Letter (8.5×11)';
+    const paperLabel = 'Letter (8.5×11)';
     lineItems.push({
       price_data: {
         currency:     'usd',
         product_data: {
           name:        `${printLabel} Printing — ${paperLabel}`,
-          description: `${pages} page${pages !== 1 ? 's' : ''} × $${((pricePerPage + legalSurcharge) / 100).toFixed(2)}/page`,
+          description: `${pages} page${pages !== 1 ? 's' : ''} × $${(pricePerPage / 100).toFixed(2)}/page`,
         },
-        unit_amount: pricePerPage + legalSurcharge,
+        unit_amount: pricePerPage,
       },
       quantity: pages,
     });
 
-    // Shipping
+    // USPS First Class Shipping
     lineItems.push({
       price_data: {
         currency:     'usd',
         product_data: {
-          name:        'Economy Shipping',
-          description: 'USPS First Class Mail — up to 10 pages',
+          name:        'USPS First Class Shipping',
+          description: 'USPS First Class Mail — up to 6 pages',
         },
         unit_amount: PRICE_SHIPPING,
       },
       quantity: 1,
     });
+
+    // Overweight Envelope Fee (added if pages > 6)
+    if (overweightFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency:     'usd',
+          product_data: {
+            name:        'Over 6 Pages Surcharge',
+            description: 'Flat rate envelope weight limit exceeded (+$2.50)',
+          },
+          unit_amount: PRICE_OVERWEIGHT,
+        },
+        quantity: 1,
+      });
+    }
 
     // Large order fee (> 100 pages)
     if (largeOrderFee > 0) {
@@ -129,7 +145,7 @@ exports.handler = async (event) => {
     }
 
     // Enforce minimum order total
-    const calculatedTotal = PRICE_SERVICE_FEE + printTotal + PRICE_SHIPPING + largeOrderFee;
+    const calculatedTotal = PRICE_SERVICE_FEE + printTotal + PRICE_SHIPPING + overweightFee + largeOrderFee;
     const finalTotal      = Math.max(calculatedTotal, MINIMUM_ORDER);
 
     if (finalTotal > calculatedTotal) {
@@ -147,8 +163,6 @@ exports.handler = async (event) => {
     }
 
     // ── Build Stripe Metadata ───────────────────────────────────────────────
-    // All values must be strings; Stripe enforces 500-char max per value.
-    // Addresses from the frontend are "Street, City, ST ZIP" — well under 500 chars.
     const completeMetadata = {
       file_url:         String(fileUrl).slice(0, 499),
       page_count:       String(pages),

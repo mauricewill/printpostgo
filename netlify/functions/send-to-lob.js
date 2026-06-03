@@ -138,7 +138,6 @@ async function sendToLob(orderDetails, idempotencyKey) {
   const {
     fileUrl,
     printType,   // 'bw' | 'color'
-    paperSize,   // 'letter' | 'legal'
     sender,      // { name, address, email }
     recipient,   // { name, address }
   } = orderDetails;
@@ -178,8 +177,7 @@ async function sendToLob(orderDetails, idempotencyKey) {
     // Color: Lob accepts true (full color) or false (black & white)
     color: printType === 'color',
 
-
-    // Only mail_type available on Lob developer plan
+    // Only mail_type available on Lob developer plan (USPS First Class)
     mail_type: 'usps_first_class',
 
     double_sided: false,

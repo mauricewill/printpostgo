@@ -62,8 +62,8 @@ exports.handler = async (event) => {
     fileUrl:       meta.file_url,
     pageCount:     meta.page_count,
     printType:     meta.print_type    || 'bw',
-    mailType:      meta.mail_type     || 'economy',
-    paperSize:     meta.paper_size    || 'letter',
+    mailType:      'economy', // Mapped standardly
+    paperSize:     'letter',  // Standardised to Letter (8.5×11)
     sender: {
       name:    meta.sender_name    || 'N/A',
       address: meta.sender_address || 'N/A',
@@ -79,13 +79,6 @@ exports.handler = async (event) => {
   console.log('✅ Order details parsed — session:', orderDetails.sessionId);
 
   // ── 4. Await Lob + SendGrid before returning ────────────────────────────
-  // Unlike the original fire-and-forget approach, we now await all work
-  // BEFORE returning to Netlify. This is safe because:
-  //   - Netlify Functions have a 10s default timeout (26s on paid plans)
-  //   - Lob + SendGrid typically complete in 1-3 seconds combined
-  //   - Stripe waits up to 30s for a response before marking a delivery failed
-  // Awaiting ensures logs appear in Netlify and nothing gets cut off silently.
-
   let lobId      = null;
   let lobSuccess = false;
   let lobError   = null;
@@ -183,9 +176,12 @@ exports.handler = async (event) => {
 
     <div class="section">
       <h3>🖨️ Print Job</h3>
-      <div class="row"><span class="label">Pages</span><span class="value">${orderDetails.pageCount}</span></div>
+      <div class="row">
+        <span class="label">Pages</span>
+        <span class="value">${orderDetails.pageCount} ${parseInt(orderDetails.pageCount, 10) > 6 ? '(Overweight Surcharge Applied)' : ''}</span>
+      </div>
       <div class="row"><span class="label">Print Type</span><span class="value">${orderDetails.printType === 'color' ? 'Full Color' : 'Black & White'}</span></div>
-      <div class="row"><span class="label">Paper Size</span><span class="value">${orderDetails.paperSize === 'legal' ? 'Legal (8.5×14)' : 'Letter (8.5×11)'}</span></div>
+      <div class="row"><span class="label">Paper Size</span><span class="value">Letter (8.5×11)</span></div>
       <div class="row"><span class="label">Mail Type</span><span class="value">USPS First Class</span></div>
       <div class="row"><span class="label">Amount Paid</span><span class="value">$${(orderDetails.amountTotal / 100).toFixed(2)}</span></div>
       <div class="row"><span class="label">PDF File</span><span class="value"><a href="${orderDetails.fileUrl}">Download PDF ↗</a></span></div>
