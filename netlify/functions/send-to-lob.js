@@ -178,9 +178,6 @@ async function sendToLob(orderDetails, idempotencyKey) {
     // Color: Lob accepts true (full color) or false (black & white)
     color: printType === 'color',
 
-    // Lob supports 'us_letter' (8.5x11) and 'us_legal' (8.5x14)
-    // Defaults to us_letter if paperSize is unrecognized
-    size: paperSize === 'legal' ? 'us_legal' : 'us_letter',
 
     // Only mail_type available on Lob developer plan
     mail_type: 'usps_first_class',
@@ -199,7 +196,6 @@ async function sendToLob(orderDetails, idempotencyKey) {
     to:         lobPayload.to,
     from:       lobPayload.from,
     color:      lobPayload.color,
-    size:       lobPayload.size,
     mail_type:  lobPayload.mail_type,
     idempKey:   idempotencyKey,
   }, null, 2));
