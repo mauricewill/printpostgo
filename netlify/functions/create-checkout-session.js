@@ -7,11 +7,14 @@
  * Pricing (must match frontend display in index.html):
  *   B&W printing:         $0.30 / page
  *   Color printing:       $0.85 / page
- *   USPS First Class:     $4.00 flat (covers up to 6 pages)
- *   Overweight surcharge: $2.50 (added when pageCount > 6)
+ *   USPS First Class:     $4.00 flat (covers up to 6 total printed pages)
+ *   Overweight surcharge: $2.50 (added when total billable pages > 6)
  *   Service fee:          $1.50
- *   Large order fee:      $5.00 (when pageCount > 100)
+ *   Large order fee:      $5.00 (when total billable pages > 100)
  *   Minimum order:        $5.00
+ *
+ * NOTE: Using 'insert_blank_page' adds exactly 1 page to the printed output.
+ * Therefore, base printing is calculated on (uploaded pages + 1).
  * ──────────────────────────────────────────────────────────────────────────
  */
 
@@ -46,7 +49,6 @@ exports.handler = async (event) => {
     const paperSize = 'letter'; // Standard letter size default
 
     // Normalize mailType: frontend sends 'standard', we treat it as 'economy'
-    // This also handles any legacy 'economy' value gracefully
     const rawMailType = (data.mailType || 'standard').toLowerCase();
     const mailType    = (rawMailType === 'standard' || rawMailType === 'economy')
       ? 'economy'
@@ -57,21 +59,24 @@ exports.handler = async (event) => {
 
     if (!fileUrl) throw new Error('Missing file URL');
 
-    const pages = Math.max(parseInt(pageCount, 10) || 1, 1);
+    const uploadedPages = Math.max(parseInt(pageCount, 10) || 1, 1);
+    
+    // Crucial integration: address_placement: 'insert_blank_page' adds exactly 1 page to the physical letter
+    const billablePages = uploadedPages + 1; 
 
     // ── Pricing (all in cents) ──────────────────────────────────────────────
     const PRICE_BW           = 30;   // $0.30/page
     const PRICE_COLOR        = 85;   // $0.85/page
-    const PRICE_SHIPPING     = 400;  // $4.00 flat USPS First Class (up to 6 pages)
-    const PRICE_OVERWEIGHT   = 250;  // $2.50 surcharge for letters over 6 pages
+    const PRICE_SHIPPING     = 400;  // $4.00 flat USPS First Class (up to 6 total pages)
+    const PRICE_OVERWEIGHT   = 250;  // $2.50 surcharge for letters over 6 total sheets
     const PRICE_SERVICE_FEE  = 150;  // $1.50
     const PRICE_LARGE_ORDER  = 500;  // $5.00 when > 100 pages
     const MINIMUM_ORDER      = 500;  // $5.00 minimum
 
     const pricePerPage   = printType === 'color' ? PRICE_COLOR : PRICE_BW;
-    const printTotal     = pages * pricePerPage;
-    const overweightFee  = pages > 6 ? PRICE_OVERWEIGHT : 0;
-    const largeOrderFee  = pages > 100 ? PRICE_LARGE_ORDER : 0;
+    const printTotal     = billablePages * pricePerPage;
+    const overweightFee  = billablePages > 6 ? PRICE_OVERWEIGHT : 0;
+    const largeOrderFee  = billablePages > 100 ? PRICE_LARGE_ORDER : 0;
 
     // ── Build Stripe Line Items ─────────────────────────────────────────────
     const lineItems = [];
@@ -94,11 +99,11 @@ exports.handler = async (event) => {
         currency:     'usd',
         product_data: {
           name:        `${printLabel} Printing — ${paperLabel}`,
-          description: `${pages} page${pages !== 1 ? 's' : ''} × $${(pricePerPage / 100).toFixed(2)}/page`,
+          description: `${uploadedPages} page${uploadedPages !== 1 ? 's' : ''} + 1 blank address page × $${(pricePerPage / 100).toFixed(2)}/page`,
         },
         unit_amount: pricePerPage,
       },
-      quantity: pages,
+      quantity: billablePages,
     });
 
     // USPS First Class Shipping
@@ -107,14 +112,14 @@ exports.handler = async (event) => {
         currency:     'usd',
         product_data: {
           name:        'USPS First Class Shipping',
-          description: 'USPS First Class Mail — up to 6 pages',
+          description: 'USPS First Class Mail — up to 6 total pages',
         },
         unit_amount: PRICE_SHIPPING,
       },
       quantity: 1,
     });
 
-    // Overweight Envelope Fee (added if pages > 6)
+    // Overweight Envelope Fee (added if billablePages > 6)
     if (overweightFee > 0) {
       lineItems.push({
         price_data: {
@@ -164,18 +169,19 @@ exports.handler = async (event) => {
 
     // ── Build Stripe Metadata ───────────────────────────────────────────────
     const completeMetadata = {
-      file_url:         String(fileUrl).slice(0, 499),
-      page_count:       String(pages),
-      print_type:       printType,
-      mail_type:        mailType,
-      paper_size:       paperSize,
-      customer_email:   customerEmail,
-      sender_name:      String(metadata.sender          || '').slice(0, 499),
-      sender_address:   String(metadata.sender_address  || '').slice(0, 499),
-      recipient_name:   String(metadata.recipient       || '').slice(0, 499),
-      recipient_address: String(metadata.recipient_address || '').slice(0, 499),
-      total_cents:      String(finalTotal),
-      order_date:       new Date().toISOString(),
+      file_url:            String(fileUrl).slice(0, 499),
+      page_count:          String(billablePages), // Store the absolute printed sheet count (uploaded + 1)
+      uploaded_page_count: String(uploadedPages), // Store raw uploaded quantity for audit logging
+      print_type:          printType,
+      mail_type:           mailType,
+      paper_size:          paperSize,
+      customer_email:      customerEmail,
+      sender_name:         String(metadata.sender          || '').slice(0, 499),
+      sender_address:      String(metadata.sender_address  || '').slice(0, 499),
+      recipient_name:      String(metadata.recipient       || '').slice(0, 499),
+      recipient_address:   String(metadata.recipient_address || '').slice(0, 499),
+      total_cents:         String(finalTotal),
+      order_date:          new Date().toISOString(),
     };
 
     console.log('📋 Stripe metadata:', JSON.stringify(completeMetadata, null, 2));

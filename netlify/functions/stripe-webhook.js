@@ -1,19 +1,7 @@
 /**
  * stripe-webhook.js
  * ──────────────────────────────────────────────────────────────────────────
- * Receives Stripe webhook events and orchestrates:
- *   1. Parse the checkout.session.completed event
- *   2. Submit the letter to Lob.com for automated printing & mailing
- *   3. Send a SendGrid notification email to the operator
- *
- * IMPORTANT: We await both Lob and SendGrid before returning 200 to Stripe.
- * Stripe allows up to 30s for a response. Lob + SendGrid typically finish in
- * 1-3s, well within the Netlify 10s default timeout. Awaiting is intentional —
- * it guarantees all console.log statements appear in Netlify function logs,
- * which would be silently swallowed if we returned early (fire-and-forget).
- *
- * Idempotency: Lob's Idempotency-Key header (set to the Stripe session ID)
- * prevents duplicate letters if Stripe retries the webhook.
+ * Receives Stripe webhook events and orchestrates automated mailing fulfillment.
  * ──────────────────────────────────────────────────────────────────────────
  */
 
@@ -56,14 +44,15 @@ exports.handler = async (event) => {
   const meta = session.metadata || {};
 
   const orderDetails = {
-    sessionId:     session.id,
-    paymentStatus: session.payment_status,
-    amountTotal:   session.amount_total,
-    fileUrl:       meta.file_url,
-    pageCount:     meta.page_count,
-    printType:     meta.print_type    || 'bw',
-    mailType:      'economy', // Mapped standardly
-    paperSize:     'letter',  // Standardised to Letter (8.5×11)
+    sessionId:          session.id,
+    paymentStatus:      session.payment_status,
+    amountTotal:        session.amount_total,
+    fileUrl:            meta.file_url,
+    pageCount:          meta.page_count,          // Total billable physical pages (uploaded + 1 address sheet)
+    uploadedPageCount:  meta.uploaded_page_count  || String(Math.max((parseInt(meta.page_count, 10) - 1), 1)), // Fallback
+    printType:          meta.print_type           || 'bw',
+    mailType:           'economy', 
+    paperSize:          'letter',  
     sender: {
       name:    meta.sender_name    || 'N/A',
       address: meta.sender_address || 'N/A',
@@ -76,7 +65,7 @@ exports.handler = async (event) => {
     orderDate: meta.order_date || new Date().toISOString(),
   };
 
-  console.log('✅ Order details parsed — session:', orderDetails.sessionId);
+  console.log('✅ Order details parsed — session:', orderDetails.sessionId, '| Uploaded:', orderDetails.uploadedPageCount, '| Billable Sheets:', orderDetails.pageCount);
 
   // ── 4. Await Lob + SendGrid before returning ────────────────────────────
   let lobId      = null;
@@ -85,7 +74,7 @@ exports.handler = async (event) => {
 
   // ── Step A: Call Lob ────────────────────────────────────────────────────
   try {
-    console.log('📮 Calling Lob API...');
+    console.log('📮 Calling Lob API with automatic cover page insertion...');
     const lobResult = await sendToLob(orderDetails, session.id);
     lobSuccess = true;
     lobId      = lobResult.lobId;
@@ -100,10 +89,9 @@ exports.handler = async (event) => {
   try {
       const isTestMode = (process.env.LOB_API_KEY || '').startsWith('test_');
 
-      // Status badge for the email subject/header
-      const statusBadge = lobSuccess
-        ? `✅ AUTO-MAILED via Lob${isTestMode ? ' (TEST MODE)' : ''}`
-        : `⚠️ LOB FAILED — MANUAL ACTION REQUIRED`;
+      const subjectPrefix = lobSuccess
+        ? (isTestMode ? '[TEST] ✅ Auto-Mailed' : '✅ Auto-Mailed')
+        : '⚠️ MANUAL ACTION REQUIRED';
 
       const emailHtml = `
 <!DOCTYPE html>
@@ -168,6 +156,10 @@ exports.handler = async (event) => {
           <span class="value lob-id">${lobId}</span>
         </div>
         <div class="row">
+          <span class="label">Address Placement</span>
+          <span class="value">insert_blank_page (Cover address sheet)</span>
+        </div>
+        <div class="row">
           <span class="label">Dashboard</span>
           <span class="value"><a href="https://dashboard.lob.com/letters">View in Lob ↗</a></span>
         </div>
@@ -177,8 +169,8 @@ exports.handler = async (event) => {
     <div class="section">
       <h3>🖨️ Print Job</h3>
       <div class="row">
-        <span class="label">Pages</span>
-        <span class="value">${orderDetails.pageCount} ${parseInt(orderDetails.pageCount, 10) > 6 ? '(Overweight Surcharge Applied)' : ''}</span>
+        <span class="label">Billable Pages</span>
+        <span class="value">${orderDetails.pageCount} total sheets (${orderDetails.uploadedPageCount} uploaded + 1 cover page) ${parseInt(orderDetails.pageCount, 10) > 6 ? '(Overweight Surcharge Applied)' : ''}</span>
       </div>
       <div class="row"><span class="label">Print Type</span><span class="value">${orderDetails.printType === 'color' ? 'Full Color' : 'Black & White'}</span></div>
       <div class="row"><span class="label">Paper Size</span><span class="value">Letter (8.5×11)</span></div>
@@ -206,10 +198,6 @@ exports.handler = async (event) => {
 </div>
 </body>
 </html>`;
-
-      const subjectPrefix = lobSuccess
-        ? (isTestMode ? '[TEST] ✅ Auto-Mailed' : '✅ Auto-Mailed')
-        : '⚠️ MANUAL ACTION REQUIRED';
 
       const msg = {
         to:      'maurice@printpostgo.com',

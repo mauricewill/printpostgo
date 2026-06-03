@@ -15,23 +15,12 @@ const https = require('https');
 // ─── Address Parser ────────────────────────────────────────────────────────
 /**
  * Parses a single-line address string into Lob's structured fields.
- *
- * Expected input formats (both are produced by the frontend):
- *   "123 Main St, New York, NY 10001"
- *   "456 Elm Ave, Los Angeles, CA 90001"
- *
- * Returns an object with: address_line1, address_city, address_state,
- * address_zip, address_country.
- *
- * Throws a descriptive error if any required field is missing so the caller
- * can surface it clearly instead of sending a malformed request to Lob.
  */
 function parseAddress(rawStr) {
   if (!rawStr || typeof rawStr !== 'string') {
     throw new Error(`Invalid address: received "${rawStr}"`);
   }
 
-  // Split on commas and trim each part
   const parts = rawStr.split(',').map(p => p.trim()).filter(Boolean);
 
   if (parts.length < 3) {
@@ -41,7 +30,6 @@ function parseAddress(rawStr) {
     );
   }
 
-  // Last segment is "STATE ZIP" e.g. "NY 10001"
   const stateZipPart = parts[parts.length - 1];
   const stateZipMatch = stateZipPart.match(/^([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
 
@@ -55,7 +43,6 @@ function parseAddress(rawStr) {
   const address_state = stateZipMatch[1].toUpperCase();
   const address_zip   = stateZipMatch[2];
   const address_city  = parts[parts.length - 2];
-  // Everything before city is the street (handles "Apt 4B, 123 Main St, ..." edge cases)
   const address_line1 = parts.slice(0, parts.length - 2).join(', ');
 
   if (!address_line1) throw new Error(`Street address missing in "${rawStr}"`);
@@ -71,10 +58,6 @@ function parseAddress(rawStr) {
 }
 
 // ─── Lob API Helper ────────────────────────────────────────────────────────
-/**
- * Makes an HTTPS request to the Lob API.
- * Uses Node's built-in `https` module to keep the bundle lean.
- */
 function lobRequest(path, method, bodyObj) {
   return new Promise((resolve, reject) => {
     const apiKey  = process.env.LOB_API_KEY;
@@ -82,7 +65,6 @@ function lobRequest(path, method, bodyObj) {
       return reject(new Error('LOB_API_KEY environment variable is not set'));
     }
 
-    // Lob uses HTTP Basic Auth: API key as username, empty string as password
     const credentials = Buffer.from(`${apiKey}:`).toString('base64');
     const bodyStr     = JSON.stringify(bodyObj);
 
@@ -126,33 +108,23 @@ function lobRequest(path, method, bodyObj) {
 // ─── Main Export ───────────────────────────────────────────────────────────
 /**
  * sendToLob(orderDetails, idempotencyKey)
- *
- * @param {object} orderDetails - The parsed order from the Stripe webhook
- * @param {string} idempotencyKey - Stripe session ID used to prevent duplicate letters
- *
- * @returns {Promise<{ lobId: string, expectedDeliveryDate: string }>}
- *
- * Throws on failure — caller should catch and handle gracefully.
  */
 async function sendToLob(orderDetails, idempotencyKey) {
   const {
     fileUrl,
-    printType,   // 'bw' | 'color'
-    sender,      // { name, address, email }
-    recipient,   // { name, address }
+    printType,   
+    sender,      
+    recipient,   
   } = orderDetails;
 
-  // ── Validate PDF URL ──────────────────────────────────────────────────
   if (!fileUrl) {
     throw new Error('No file URL provided — cannot submit to Lob without a PDF');
   }
 
-  // ── Parse addresses ───────────────────────────────────────────────────
   const fromAddress = parseAddress(sender.address);
   const toAddress   = parseAddress(recipient.address);
 
   // ── Build Lob letter payload ──────────────────────────────────────────
-  // Lob Letters API: https://docs.lob.com/#tag/Letters/operation/letter_create
   const lobPayload = {
     description: `PrintPostGo Order — ${idempotencyKey}`,
     to: {
@@ -171,34 +143,32 @@ async function sendToLob(orderDetails, idempotencyKey) {
       address_zip:      fromAddress.address_zip,
       address_country:  fromAddress.address_country,
     },
-    // Lob accepts a publicly accessible PDF URL for the `file` field
     file: fileUrl,
 
-    // Color: Lob accepts true (full color) or false (black & white)
     color: printType === 'color',
 
-    // Only mail_type available on Lob developer plan (USPS First Class)
     mail_type: 'usps_first_class',
 
     double_sided: false,
 
-    // Idempotency key prevents duplicate letters if the webhook fires twice
-    // Lob honors this as an Idempotency-Key header
+    // Insert a blank address page automatically at the beginning of the file.
+    // Lob handles standard window envelope positioning completely reliably with this.
+    address_placement: 'insert_blank_page',
+
     metadata: {
       stripe_session_id: idempotencyKey,
       source:            'printpostgo',
     },
   };
 
-  console.log('📮 Submitting letter to Lob:', JSON.stringify({
-    to:         lobPayload.to,
-    from:       lobPayload.from,
-    color:      lobPayload.color,
-    mail_type:  lobPayload.mail_type,
-    idempKey:   idempotencyKey,
+  console.log('📮 Submitting letter to Lob (blank page insertion configured):', JSON.stringify({
+    to:                lobPayload.to,
+    from:              lobPayload.from,
+    color:             lobPayload.color,
+    address_placement: lobPayload.address_placement,
+    idempKey:          idempotencyKey,
   }, null, 2));
 
-  // Add Idempotency-Key header by patching the lobRequest for this call
   const apiKey      = process.env.LOB_API_KEY;
   const credentials = Buffer.from(`${apiKey}:`).toString('base64');
   const bodyStr     = JSON.stringify(lobPayload);
@@ -213,7 +183,7 @@ async function sendToLob(orderDetails, idempotencyKey) {
         'Authorization':   `Basic ${credentials}`,
         'Content-Type':    'application/json',
         'Content-Length':  Buffer.byteLength(bodyStr),
-        'Idempotency-Key': idempotencyKey, // Prevent duplicate letters on webhook retry
+        'Idempotency-Key': idempotencyKey, 
       },
     };
 
@@ -247,7 +217,7 @@ async function sendToLob(orderDetails, idempotencyKey) {
     lobId:                result.id,
     expectedDeliveryDate: result.expected_delivery_date || 'N/A',
     trackingNumber:       result.tracking_number || null,
-    lobUrl:               result.url || null, // Lob dashboard URL (test mode only)
+    lobUrl:               result.url || null, 
   };
 }
 
