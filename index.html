@@ -255,7 +255,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h2>
-                <p class="text-slate-600">Pay as you go. No subscriptions.</p>
+                <p class="text-slate-600">Pay as you go. No subscriptions. Every order automatically includes a clean cover address sheet.</p>
             </div>
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
@@ -275,30 +275,30 @@
                             </div>
                             <div>
                                 <h4 class="font-bold text-slate-900">USPS First Class</h4>
-                                <p class="text-sm text-slate-500">$4.00 Flat Rate • Up to 6 pages (+$2.50 surcharge over 6 pages)</p>
+                                <p class="text-sm text-slate-500">$4.00 Flat Rate • Up to 6 total sheets (+$2.50 surcharge over 6 pages)</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg">
-                    <h3 class="font-header font-bold text-xl mb-6">Quick Estimator</h3>
+                    <h3 class="font-header font-bold text-xl mb-6">Quick Estimator (includes inserted address page)</h3>
                     <div class="space-y-4">
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">1 Page (B&W) - USPS First Class</span>
-                            <span class="font-bold text-slate-900">$5.80</span>
+                            <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - USPS First Class</span>
+                            <span class="font-bold text-slate-900">$6.10</span>
                         </div>
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">5 Pages (B&W) - USPS First Class</span>
-                            <span class="font-bold text-slate-900">$7.00</span>
+                            <span class="text-slate-600 text-sm">5 Uploaded Pages (B&W) - USPS First Class</span>
+                            <span class="font-bold text-slate-900">$7.30</span>
                         </div>
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">8 Pages (B&W) - USPS First Class</span>
-                            <span class="font-bold text-slate-900">$10.40</span>
+                            <span class="text-slate-600 text-sm">8 Uploaded Pages (B&W) - USPS First Class</span>
+                            <span class="font-bold text-slate-900">$10.70</span>
                         </div>
                         <div class="flex justify-between items-center py-3">
-                            <span class="text-slate-600 text-sm">5 Pages (Color) - USPS First Class</span>
-                            <span class="font-bold text-slate-900 font-header text-slate-900">$9.75</span>
+                            <span class="text-slate-600 text-sm">5 Uploaded Pages (Color) - USPS First Class</span>
+                            <span class="font-bold text-slate-900 font-header text-slate-900">$10.60</span>
                         </div>
                     </div>
                 </div>
@@ -494,7 +494,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Paper Size (Static elegant layout, Legal removed) -->
+                                <!-- Paper Size -->
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-2">Paper Size & Specifications</label>
                                     <div class="flex items-center gap-3 p-3.5 border rounded-lg bg-slate-50 border-slate-200">
@@ -518,13 +518,13 @@
                                     </div>
                                     <div>
                                         <span class="block text-sm font-semibold text-slate-900">USPS First Class</span>
-                                        <span class="block text-xs text-slate-500">Up to 6 pages included • $4.00 flat rate</span>
+                                        <span class="block text-xs text-slate-500">Up to 6 total pages (incl. address page) • $4.00 flat rate</span>
                                         <span class="block text-[10px] text-green-600 font-bold mt-1" id="date-standard">Est. Arrival: ...</span>
                                     </div>
                                     <span class="ml-auto text-brand-800 font-bold text-sm" id="shipping-rate-display">$4.00</span>
                                 </div>
                                 <p id="envelope-warning" class="text-xs text-amber-600 mt-2 hidden">
-                                    <i class="fa-solid fa-circle-info"></i> USPS First Class has a standard 6-page limit. A $2.50 fee has been added for extra envelope handling.
+                                    <i class="fa-solid fa-circle-info"></i> USPS First Class standard envelope limit is 6 pages. With the automatically inserted address page, your order is now over 6 total pages. A $2.50 overweight surcharge has been applied.
                                 </p>
                                 <!-- Hidden input for consistency -->
                                 <input type="hidden" name="mailType" value="economy">
@@ -900,7 +900,8 @@
                         page.render(renderContext);
                     });
 
-                    enforceEnvelopeRules();
+                    const billablePages = window.state.pageCount > 0 ? window.state.pageCount + 1 : 0;
+                    enforceEnvelopeRules(billablePages);
                     calculateTotal();
                 }, function (reason) {
                     console.error(reason);
@@ -924,9 +925,10 @@
         }
 
         // --- Logic: Form Rules & Calculation ---
-        window.enforceEnvelopeRules = function() {
+        window.enforceEnvelopeRules = function(billablePages) {
             const warning = document.getElementById('envelope-warning');
-            if (window.state.pageCount > 6) {
+            const actualPages = billablePages || (window.state.pageCount > 0 ? window.state.pageCount + 1 : 0);
+            if (actualPages > 6) {
                 warning.classList.remove('hidden');
             } else {
                 warning.classList.add('hidden');
@@ -942,11 +944,15 @@
             document.getElementById('date-standard').innerHTML = `Est. Arrival: ${stdDate}`;
 
             const printRate = window.state.printType === 'bw' ? window.PRICES.bw : window.PRICES.color;
-            let printCost = window.state.pageCount * printRate;
             
-            // Overweight Fee over 6 pages
+            const uploadedPages = window.state.pageCount;
+            const billablePages = uploadedPages > 0 ? uploadedPages + 1 : 0;
+            
+            let printCost = billablePages * printRate;
+            
+            // Overweight Fee over 6 pages total
             let overweightCost = 0;
-            if (window.state.pageCount > 6) {
+            if (billablePages > 6) {
                 overweightCost = window.PRICES.overweightFee;
                 document.getElementById('summary-overweight-row').classList.remove('hidden');
                 document.getElementById('summary-overweight-row').classList.add('flex');
@@ -957,9 +963,9 @@
                 document.getElementById('envelope-warning').classList.add('hidden');
             }
             
-            // Large Order Surcharge Calculation
+            // Large Order Surcharge Calculation (>100 sheets)
             let largeOrderFee = 0;
-            if (window.state.pageCount > 100) {
+            if (billablePages > 100) {
                 largeOrderFee = window.PRICES.largeOrderFee;
                 document.getElementById('summary-large-order-row').classList.remove('hidden');
                 document.getElementById('summary-large-order-row').classList.add('flex');
@@ -967,7 +973,7 @@
             } else {
                 document.getElementById('summary-large-order-row').classList.add('hidden');
                 document.getElementById('summary-large-order-row').classList.remove('flex');
-                if (window.state.pageCount <= 6) {
+                if (uploadedPages <= 5) {
                     document.getElementById('large-order-warning').classList.add('hidden');
                 }
             }
@@ -976,7 +982,11 @@
             
             const total = printCost + overweightCost + shippingCost + window.PRICES.serviceFee + largeOrderFee;
 
-            document.getElementById('summary-page-count').textContent = window.state.pageCount;
+            if (uploadedPages > 0) {
+                document.getElementById('summary-page-count').textContent = `${uploadedPages} + 1 address page`;
+            } else {
+                document.getElementById('summary-page-count').textContent = '0';
+            }
             document.getElementById('summary-print-cost').textContent = formatMoney(printCost);
             document.getElementById('summary-shipping-cost').textContent = formatMoney(shippingCost);
             document.getElementById('summary-large-order-cost').textContent = formatMoney(largeOrderFee);
@@ -986,13 +996,13 @@
             totalEl.textContent = formatMoney(total);
             document.getElementById('mobile-total').textContent = formatMoney(total);
 
-            if (window.state.pageCount > 0 && window.state.file) {
+            if (uploadedPages > 0 && window.state.file) {
                 document.getElementById('submit-btn').disabled = false;
             } else {
                 document.getElementById('submit-btn').disabled = true;
             }
 
-            enforceEnvelopeRules();
+            enforceEnvelopeRules(billablePages);
         }
 
         window.handleFormSubmit = async function(e) {
@@ -1047,7 +1057,7 @@
                 const payload = {
                     pageCount: parseInt(window.state.pageCount),
                     printType: window.state.printType,
-                    mailType: 'economy', // Retaining 'economy' parameter compatibility for the backend endpoint
+                    mailType: 'economy', 
                     paperSize: window.state.paperSize,
                     customerEmail: document.querySelector('input[name="senderEmail"]').value,
                     fileUrl: downloadURL,
@@ -1187,7 +1197,7 @@
             color: 0.85,
             standardEnv: 4.00,
             serviceFee: 1.50,
-            overweightFee: 2.50, // Fee for >6 pages
+            overweightFee: 2.50, 
             largeOrderFee: 5.00
         };
 
