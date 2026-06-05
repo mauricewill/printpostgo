@@ -362,12 +362,53 @@
                                     </div>
                                     <p id="filename-display" class="text-sm font-medium text-slate-900 truncate max-w-xs"></p>
                                     
+                                    <!-- Pre-flight Suite Panel -->
+                                    <div id="preflight-container" class="mt-4 w-full border border-slate-100 rounded-xl bg-slate-50/50 p-4 text-left hidden">
+                                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                            <i class="fa-solid fa-gauge-high text-brand-800"></i> Pre-flight Quality Scan
+                                        </h4>
+                                        <div class="space-y-3 text-xs">
+                                            <!-- Dimensions -->
+                                            <div id="pf-dimensions" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
+                                                <div class="flex items-start gap-2">
+                                                    <span id="pf-dimensions-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
+                                                    <div>
+                                                        <p class="font-semibold text-slate-800">Page Dimensions</p>
+                                                        <p id="pf-dimensions-text" class="text-slate-500">Checking layout size...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Fonts Check -->
+                                            <div id="pf-fonts" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
+                                                <div class="flex items-start gap-2">
+                                                    <span id="pf-fonts-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
+                                                    <div>
+                                                        <p class="font-semibold text-slate-800">Font Embeddings</p>
+                                                        <p id="pf-fonts-text" class="text-slate-500">Checking PDF typography dictionaries...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Annotations/Interactive Form Check -->
+                                            <div id="pf-interactive" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
+                                                <div class="flex items-start gap-2">
+                                                    <span id="pf-interactive-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
+                                                    <div>
+                                                        <p class="font-semibold text-slate-800">Interactive Forms</p>
+                                                        <p id="pf-interactive-text" class="text-slate-500">Checking for dynamic fields...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- Large Order Warning -->
                                     <p id="large-order-warning" class="hidden text-xs text-amber-600 font-bold mt-2 bg-amber-50 px-3 py-1 rounded border border-amber-200">
                                         <i class="fa-solid fa-triangle-exclamation"></i> Orders over 100 pages incur a $5.00 processing fee.
                                     </p>
 
-                                    <button type="button" class="text-xs text-red-500 underline mt-2 hover:text-red-600" onclick="resetFile()">Remove & Upload Different File</button>
+                                    <button type="button" class="text-xs text-red-500 underline mt-4 hover:text-red-600" onclick="resetFile()">Remove & Upload Different File</button>
                                 </div>
                             </div>
                         </div>
@@ -858,6 +899,12 @@
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'printpostgo-web';
 
+        // Standard PostScript exempt fonts that do not trigger Lob unembedded fonts error
+        const standardFonts = [
+            'helvetica', 'times', 'courier', 'symbol', 'zapfdingbats', 
+            'arial', 'georgia', 'trebuchet', 'verdana', 'sans-serif', 'serif'
+        ];
+
         // --- Logic: File Handling & Upload ---
         window.handleFileSelect = function(input) {
             const file = input.files[0];
@@ -877,14 +924,24 @@
             document.getElementById('filename-display').textContent = file.name;
             document.getElementById('page-count-display').textContent = "Scanning...";
             
+            // Re-render scanning loaders inside preflight cards
+            document.getElementById('preflight-container').classList.remove('hidden');
+            document.getElementById('pf-dimensions-icon').innerHTML = '<i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i>';
+            document.getElementById('pf-dimensions-text').textContent = 'Analyzing margins...';
+            document.getElementById('pf-fonts-icon').innerHTML = '<i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i>';
+            document.getElementById('pf-fonts-text').textContent = 'Extracting typography structures...';
+            document.getElementById('pf-interactive-icon').innerHTML = '<i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i>';
+            document.getElementById('pf-interactive-text').textContent = 'Scanning annotation schemas...';
+
             const fileReader = new FileReader();
             fileReader.onload = function() {
                 const typedarray = new Uint8Array(this.result);
 
-                pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+                pdfjsLib.getDocument(typedarray).promise.then(async function(pdf) {
                     window.state.pageCount = pdf.numPages;
                     document.getElementById('page-count-display').textContent = `${window.state.pageCount} Pages detected`;
                     
+                    // Render First Page Canvas
                     pdf.getPage(1).then(function(page) {
                         var scale = 1.0;
                         var viewport = page.getViewport({scale: scale});
@@ -900,13 +957,113 @@
                         page.render(renderContext);
                     });
 
+                    // --- Pre-flight Suite Deep Verification Scan ---
+                    let hasUnembeddedFonts = false;
+                    let badFontsList = new Set();
+                    let hasInteractiveElements = false;
+                    let dimensionsMatch = true;
+                    let firstPageDims = "";
+
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        
+                        // 1. Dimensions Check
+                        const viewport = page.getViewport({ scale: 1.0 });
+                        const widthInches = viewport.width / 72;
+                        const heightInches = viewport.height / 72;
+                        if (i === 1) {
+                            firstPageDims = `${widthInches.toFixed(1)}" x ${heightInches.toFixed(1)}"`;
+                        }
+                        
+                        // Standard US Letter is 8.5" x 11". We add minor margins for landscape/rotation differences.
+                        const isLetterWidth = (widthInches >= 8.0 && widthInches <= 9.0) || (widthInches >= 10.5 && widthInches <= 11.5);
+                        const isLetterHeight = (heightInches >= 10.5 && heightInches <= 11.5) || (heightInches >= 8.0 && heightInches <= 9.0);
+                        if (!isLetterWidth || !isLetterHeight) {
+                            dimensionsMatch = false;
+                        }
+
+                        // 2. Interactive Fields Widget Check
+                        const annotations = await page.getAnnotations();
+                        const hasWidget = annotations.some(ann => ann.subtype === 'Widget');
+                        if (hasWidget) {
+                            hasInteractiveElements = true;
+                        }
+
+                        // 3. Unembedded Font Inspection Check
+                        try {
+                            const fontList = await page.getFontRefs();
+                            if (fontList && Array.isArray(fontList)) {
+                                fontList.forEach(font => {
+                                    const lowerName = font.name ? font.name.toLowerCase() : '';
+                                    const isStandardExempt = standardFonts.some(f => lowerName.includes(f));
+                                    if (!font.loaded && !isStandardExempt && font.name) {
+                                        const cleanName = font.name.replace(/[^a-zA-Z0-9, \-]/g, '');
+                                        badFontsList.add(cleanName);
+                                        hasUnembeddedFonts = true;
+                                    }
+                                });
+                            }
+                        } catch (fontErr) {
+                            console.warn("Could not read font structure metadata on page " + i, fontErr);
+                        }
+                    }
+
+                    // Store results globally in state
+                    window.state.hasUnembeddedFonts = hasUnembeddedFonts;
+
+                    // --- Dynamic Preflight DOM Construction ---
+                    // Dimensions Update
+                    const pfDimIcon = document.getElementById('pf-dimensions-icon');
+                    const pfDimText = document.getElementById('pf-dimensions-text');
+                    if (dimensionsMatch) {
+                        pfDimIcon.innerHTML = '<i class="fa-solid fa-circle-check text-green-500"></i>';
+                        pfDimText.innerHTML = `Standard Letter size detected (${firstPageDims}).`;
+                    } else {
+                        pfDimIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i>';
+                        pfDimText.innerHTML = `<span class="text-amber-700 font-semibold">Non-standard dimensions (${firstPageDims}).</span> Best matches standard US Letter (8.5" x 11"). Layout alignment might print shifted.`;
+                    }
+
+                    // Fonts Update
+                    const pfFontIcon = document.getElementById('pf-fonts-icon');
+                    const pfFontText = document.getElementById('pf-fonts-text');
+                    if (!hasUnembeddedFonts) {
+                        pfFontIcon.innerHTML = '<i class="fa-solid fa-circle-check text-green-500"></i>';
+                        pfFontText.textContent = "All document fonts are verified and fully embedded.";
+                    } else {
+                        pfFontIcon.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500 animate-pulse"></i>';
+                        const listStr = Array.from(badFontsList).slice(0, 3).join(', ') + (badFontsList.size > 3 ? '...' : '');
+                        pfFontText.innerHTML = `<span class="text-red-700 font-semibold">Unembedded fonts: ${listStr}</span>. This will cause a printing failure on our mail server. Please export with embedded typography structures.`;
+                    }
+
+                    // Interactive Forms Update
+                    const pfIntIcon = document.getElementById('pf-interactive-icon');
+                    const pfIntText = document.getElementById('pf-interactive-text');
+                    if (!hasInteractiveElements) {
+                        pfIntIcon.innerHTML = '<i class="fa-solid fa-circle-check text-green-500"></i>';
+                        pfIntText.textContent = "No fillable interactive fields or form widgets found.";
+                    } else {
+                        pfIntIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i>';
+                        pfIntText.innerHTML = `<span class="text-amber-700 font-semibold">Interactive PDF form detected.</span> Dynamic input form fields may render blank on prints. We suggest flattening before mailing.`;
+                    }
+
+                    // Trigger GSAP entrance animation for preflight scorecard
+                    gsap.fromTo("#preflight-container", {opacity: 0, y: 10}, {opacity: 1, y:0, duration: 0.3, ease: "power2.out"});
+
                     const billablePages = window.state.pageCount > 0 ? window.state.pageCount + 1 : 0;
                     enforceEnvelopeRules(billablePages);
                     calculateTotal();
+
                 }, function (reason) {
-                    console.error(reason);
-                    document.getElementById('page-count-display').textContent = "Error reading PDF";
+                    console.error("PDF Parsing error:", reason);
+                    document.getElementById('page-count-display').textContent = "Error reading PDF file";
+                    
+                    const pfFontIcon = document.getElementById('pf-fonts-icon');
+                    const pfFontText = document.getElementById('pf-fonts-text');
+                    pfFontIcon.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500"></i>';
+                    pfFontText.innerHTML = `<span class="text-red-700 font-semibold">Decryption/Parsing failed.</span> The PDF is protected, corrupted or encrypted. Please save as standard unprotected format.`;
+                    
                     window.state.pageCount = 0;
+                    window.state.hasUnembeddedFonts = true; // Block submission
                     calculateTotal();
                 });
             };
@@ -917,10 +1074,16 @@
             document.getElementById('file-upload').value = '';
             window.state.file = null;
             window.state.pageCount = 0;
+            window.state.hasUnembeddedFonts = false;
             document.getElementById('upload-prompt').classList.remove('hidden');
             document.getElementById('file-info').classList.add('hidden');
             document.getElementById('large-order-warning').classList.add('hidden');
             document.getElementById('upload-error').classList.add('hidden');
+            
+            // Hide preflight container completely
+            document.getElementById('preflight-container').classList.add('hidden');
+            
+            document.getElementById('submit-btn').innerHTML = '<span>Proceed to Payment</span> <i class="fa-solid fa-arrow-right text-xs"></i>';
             calculateTotal();
         }
 
@@ -996,10 +1159,20 @@
             totalEl.textContent = formatMoney(total);
             document.getElementById('mobile-total').textContent = formatMoney(total);
 
+            const submitBtn = document.getElementById('submit-btn');
+            
             if (uploadedPages > 0 && window.state.file) {
-                document.getElementById('submit-btn').disabled = false;
+                // Safeguard Block: Prevent proceed if unembedded fonts are discovered
+                if (window.state.hasUnembeddedFonts) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span>Fix PDF Errors to Proceed</span>';
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>Proceed to Payment</span> <i class="fa-solid fa-arrow-right text-xs"></i>';
+                }
             } else {
-                document.getElementById('submit-btn').disabled = true;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Proceed to Payment</span> <i class="fa-solid fa-arrow-right text-xs"></i>';
             }
 
             enforceEnvelopeRules(billablePages);
@@ -1010,6 +1183,11 @@
 
             if (!window.state.file) {
                 window.showAlert("Upload Required", "Please upload a PDF document before moving to checkout.", "warning");
+                return;
+            }
+
+            if (window.state.hasUnembeddedFonts) {
+                window.showAlert("Invalid Typography Fonts", "This PDF relies on unembedded system fonts that aren't integrated. To prevent delivery failure via physical mailers, please upload a corrected version.", "error");
                 return;
             }
 
@@ -1188,7 +1366,8 @@
             printType: 'bw',
             mailType: 'economy', 
             paperSize: 'letter',
-            file: null
+            file: null,
+            hasUnembeddedFonts: false
         };
 
         // Pricing Constants
