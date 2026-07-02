@@ -1,224 +1,142 @@
-/**
- * send-to-lob.js
- * ──────────────────────────────────────────────────────────────────────────
- * Submits a print-and-mail job to Lob.com via their Letters API.
- *
- * Called internally from stripe-webhook.js — NOT a public HTTP endpoint.
- *
- * Lob API docs: https://docs.lob.com/#tag/Letters
- * Auth: HTTP Basic Auth  →  username = LOB_API_KEY, password = ""
- * ──────────────────────────────────────────────────────────────────────────
- */
+import { PDFDocument } from 'pdf-lib';
+import Busboy from 'busboy';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
 
-const https = require('https');
+// --- PDF NORMALIZATION HELPER ---
+async function normalizePdfToLetter(pdfBuffer) {
+  const TARGET_WIDTH = 8.5 * 72;  // 612 pts
+  const TARGET_HEIGHT = 11 * 72;  // 792 pts
 
-// ─── Address Parser ────────────────────────────────────────────────────────
-/**
- * Parses a single-line address string into Lob's structured fields.
- */
-function parseAddress(rawStr) {
-  if (!rawStr || typeof rawStr !== 'string') {
-    throw new Error(`Invalid address: received "${rawStr}"`);
+  const srcDoc = await PDFDocument.load(pdfBuffer);
+  const outDoc = await PDFDocument.create();
+  const pages = srcDoc.getPages();
+
+  for (let i = 0; i < pages.length; i++) {
+    const origPage = pages[i];
+    const { width: origWidth, height: origHeight } = origPage.getSize();
+
+    const newPage = outDoc.addPage([TARGET_WIDTH, TARGET_HEIGHT]);
+    const [embeddedPage] = await outDoc.embedPages([srcDoc.getPages()[i]]);
+
+    // Calculate aspect ratio scaling factor
+    const scale = Math.min(TARGET_WIDTH / origWidth, TARGET_HEIGHT / origHeight);
+    const scaledWidth = origWidth * scale;
+    const scaledHeight = origHeight * scale;
+
+    // Center content on the new 8.5 x 11 canvas
+    const xOffset = (TARGET_WIDTH - scaledWidth) / 2;
+    const yOffset = (TARGET_HEIGHT - scaledHeight) / 2;
+
+    newPage.drawPage(embeddedPage, {
+      width: scaledWidth,
+      height: scaledHeight,
+      x: xOffset,
+      y: yOffset,
+    });
   }
 
-  const parts = rawStr.split(',').map(p => p.trim()).filter(Boolean);
-
-  if (parts.length < 3) {
-    throw new Error(
-      `Address "${rawStr}" could not be parsed — expected at least 3 comma-separated parts ` +
-      `(street, city, state zip). Got ${parts.length} part(s): ${JSON.stringify(parts)}`
-    );
-  }
-
-  const stateZipPart = parts[parts.length - 1];
-  const stateZipMatch = stateZipPart.match(/^([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
-
-  if (!stateZipMatch) {
-    throw new Error(
-      `Could not parse state/zip from "${stateZipPart}" in address "${rawStr}". ` +
-      `Expected format: "NY 10001"`
-    );
-  }
-
-  const address_state = stateZipMatch[1].toUpperCase();
-  const address_zip   = stateZipMatch[2];
-  const address_city  = parts[parts.length - 2];
-  const address_line1 = parts.slice(0, parts.length - 2).join(', ');
-
-  if (!address_line1) throw new Error(`Street address missing in "${rawStr}"`);
-  if (!address_city)  throw new Error(`City missing in "${rawStr}"`);
-
-  return {
-    address_line1,
-    address_city,
-    address_state,
-    address_zip,
-    address_country: 'US',
-  };
+  const pdfBytes = await outDoc.save();
+  return Buffer.from(pdfBytes);
 }
 
-// ─── Lob API Helper ────────────────────────────────────────────────────────
-function lobRequest(path, method, bodyObj) {
+// --- HELPER TO PARSE MULTIPART FORM ---
+function parseMultipartForm(event) {
   return new Promise((resolve, reject) => {
-    const apiKey  = process.env.LOB_API_KEY;
-    if (!apiKey) {
-      return reject(new Error('LOB_API_KEY environment variable is not set'));
+    const busboy = Busboy({ headers: event.headers });
+    const result = { files: {}, fields: {} };
+
+    busboy.on('file', (fieldname, file, info) => {
+      const buffers = [];
+      file.on('data', (data) => buffers.push(data));
+      file.on('end', () => {
+        result.files[fieldname] = {
+          buffer: Buffer.concat(buffers),
+          filename: info.filename,
+          mimeType: info.mimeType
+        };
+      });
+    });
+
+    busboy.on('field', (fieldname, val) => {
+      result.fields[fieldname] = val;
+    });
+
+    busboy.on('finish', () => resolve(result));
+    busboy.on('error', (err) => reject(err));
+
+    // Write the Netlify event body stream into busboy
+    busboy.write(Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8'));
+    busboy.end();
+  });
+}
+
+// --- MAIN NETLIFY HANDLER ---
+export async function handler(event, context) {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+
+  try {
+    // 1. Parse incoming user file from front-end request
+    const parsedData = await parseMultipartForm(event);
+    const userFile = parsedData.files.file; // Assumes your frontend input key is named 'file'
+
+    if (!userFile) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'No PDF file provided.' }) };
     }
 
-    const credentials = Buffer.from(`${apiKey}:`).toString('base64');
-    const bodyStr     = JSON.stringify(bodyObj);
+    // 2. Automatically intercept and fix dimensions 
+    console.log(`Normalizing file: ${userFile.filename}`);
+    const letterSizePdfBuffer = await normalizePdfToLetter(userFile.buffer);
 
-    const options = {
-      hostname: 'api.lob.com',
-      port: 443,
-      path,
-      method,
-      headers: {
-        'Authorization':  `Basic ${credentials}`,
-        'Content-Type':   'application/json',
-        'Content-Length': Buffer.byteLength(bodyStr),
-      },
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(parsed);
-          } else {
-            reject(new Error(
-              `Lob API error ${res.statusCode}: ${JSON.stringify(parsed?.error || parsed)}`
-            ));
-          }
-        } catch {
-          reject(new Error(`Lob API non-JSON response (${res.statusCode}): ${data}`));
-        }
-      });
+    // 3. Build Multipart payload required by Lob API
+    const lobForm = new FormData();
+    
+    // Dynamically append your required address parameters sent from frontend, or hardcode them
+    lobForm.append('description', parsedData.fields.description || 'PrintPostGo Mailer');
+    lobForm.append('to', parsedData.fields.to_address_id || 'adr_xxxxxxxxxx'); 
+    lobForm.append('from', parsedData.fields.from_address_id || 'adr_xxxxxxxxxx');
+    lobForm.append('color', 'true');
+    
+    // Attach the freshly modified binary buffer directly as the file parameter
+    lobForm.append('file', letterSizePdfBuffer, {
+      filename: 'normalized_document.pdf',
+      contentType: 'application/pdf',
     });
 
-    req.on('error', reject);
-    req.write(bodyStr);
-    req.end();
-  });
-}
-
-// ─── Main Export ───────────────────────────────────────────────────────────
-/**
- * sendToLob(orderDetails, idempotencyKey)
- */
-async function sendToLob(orderDetails, idempotencyKey) {
-  const {
-    fileUrl,
-    printType,   
-    sender,      
-    recipient,   
-  } = orderDetails;
-
-  if (!fileUrl) {
-    throw new Error('No file URL provided — cannot submit to Lob without a PDF');
-  }
-
-  const fromAddress = parseAddress(sender.address);
-  const toAddress   = parseAddress(recipient.address);
-
-  // ── Build Lob letter payload ──────────────────────────────────────────
-  const lobPayload = {
-    description: `PrintPostGo Order — ${idempotencyKey}`,
-    to: {
-      name:             recipient.name || 'Recipient',
-      address_line1:    toAddress.address_line1,
-      address_city:     toAddress.address_city,
-      address_state:    toAddress.address_state,
-      address_zip:      toAddress.address_zip,
-      address_country:  toAddress.address_country,
-    },
-    from: {
-      name:             sender.name || 'Sender',
-      address_line1:    fromAddress.address_line1,
-      address_city:     fromAddress.address_city,
-      address_state:    fromAddress.address_state,
-      address_zip:      fromAddress.address_zip,
-      address_country:  fromAddress.address_country,
-    },
-    file: fileUrl,
-
-    color: printType === 'color',
-
-    mail_type: 'usps_first_class',
-
-    double_sided: false,
-
-    // Insert a blank address page automatically at the beginning of the file.
-    // Lob handles standard window envelope positioning completely reliably with this.
-    address_placement: 'insert_blank_page',
-
-    metadata: {
-      stripe_session_id: idempotencyKey,
-      source:            'printpostgo',
-    },
-  };
-
-  console.log('📮 Submitting letter to Lob (blank page insertion configured):', JSON.stringify({
-    to:                lobPayload.to,
-    from:              lobPayload.from,
-    color:             lobPayload.color,
-    address_placement: lobPayload.address_placement,
-    idempKey:          idempotencyKey,
-  }, null, 2));
-
-  const apiKey      = process.env.LOB_API_KEY;
-  const credentials = Buffer.from(`${apiKey}:`).toString('base64');
-  const bodyStr     = JSON.stringify(lobPayload);
-
-  const result = await new Promise((resolve, reject) => {
-    const options = {
-      hostname: 'api.lob.com',
-      port: 443,
-      path: '/v1/letters',
+    // 4. Send payload to Lob API
+    const lobResponse = await fetch('https://api.lob.com/v1/letters', {
       method: 'POST',
       headers: {
-        'Authorization':   `Basic ${credentials}`,
-        'Content-Type':    'application/json',
-        'Content-Length':  Buffer.byteLength(bodyStr),
-        'Idempotency-Key': idempotencyKey, 
+        // Basic auth using your Lob secret API key stored in Netlify environment variables
+        'Authorization': `Basic ${Buffer.from(process.env.LOB_SECRET_API_KEY + ':').toString('base64')}`,
+        ...lobForm.getHeaders()
       },
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(parsed);
-          } else {
-            reject(new Error(
-              `Lob API error ${res.statusCode}: ${JSON.stringify(parsed?.error || parsed)}`
-            ));
-          }
-        } catch {
-          reject(new Error(`Lob API non-JSON response (${res.statusCode}): ${data}`));
-        }
-      });
+      body: lobForm
     });
 
-    req.on('error', reject);
-    req.write(bodyStr);
-    req.end();
-  });
+    const lobData = await lobResponse.json();
 
-  console.log('✅ Lob letter created:', result.id, '| Expected delivery:', result.expected_delivery_date);
+    if (!lobResponse.ok) {
+      console.error('Lob failure:', lobData);
+      return {
+        statusCode: lobResponse.status,
+        body: JSON.stringify({ error: 'Lob processing error', details: lobData })
+      };
+    }
 
-  return {
-    lobId:                result.id,
-    expectedDeliveryDate: result.expected_delivery_date || 'N/A',
-    trackingNumber:       result.tracking_number || null,
-    lobUrl:               result.url || null, 
-  };
+    // Success! Return Lob response payload back to your frontend UI
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, data: lobData })
+    };
+
+  } catch (error) {
+    console.error('Server error:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Internal Server Error', message: error.message })
+    };
+  }
 }
-
-module.exports = { sendToLob, parseAddress };
