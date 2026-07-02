@@ -1,26 +1,8 @@
-/**
- * create-checkout-session.js
- * ──────────────────────────────────────────────────────────────────────────
- * Creates a Stripe Checkout session with all order data embedded in metadata.
- * The stripe-webhook.js function reads this metadata to fulfill the order.
- *
- * Pricing (must match frontend display in index.html):
- *   B&W printing:         $0.30 / page
- *   Color printing:       $0.85 / page
- *   USPS First Class:     $4.00 flat (covers up to 6 total printed pages)
- *   Overweight surcharge: $2.50 (added when total billable pages > 6)
- *   Service fee:          $1.50
- *   Large order fee:      $5.00 (when total billable pages > 100)
- *   Minimum order:        $5.00
- *
- * NOTE: Using 'insert_blank_page' adds exactly 1 page to the printed output.
- * Therefore, base printing is calculated on (uploaded pages + 1).
- * ──────────────────────────────────────────────────────────────────────────
- */
+import Stripe from 'stripe';
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-exports.handler = async (event) => {
+export async function handler(event, context) {
   const headers = {
     'Access-Control-Allow-Origin':  '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -46,13 +28,12 @@ exports.handler = async (event) => {
       metadata     = {},
     } = data;
 
-    const paperSize = 'letter'; // Standard letter size default
+    const paperSize = 'letter'; 
 
-    // Normalize mailType: frontend sends 'standard', we treat it as 'economy'
     const rawMailType = (data.mailType || 'standard').toLowerCase();
     const mailType    = (rawMailType === 'standard' || rawMailType === 'economy')
       ? 'economy'
-      : 'economy'; // Lob dev plan only supports economy/first-class — always economy
+      : 'economy'; 
 
     console.log('📎 fileUrl:', fileUrl);
     console.log('📋 metadata received:', JSON.stringify(metadata, null, 2));
@@ -60,18 +41,16 @@ exports.handler = async (event) => {
     if (!fileUrl) throw new Error('Missing file URL');
 
     const uploadedPages = Math.max(parseInt(pageCount, 10) || 1, 1);
-    
-    // Crucial integration: address_placement: 'insert_blank_page' adds exactly 1 page to the physical letter
     const billablePages = uploadedPages + 1; 
 
     // ── Pricing (all in cents) ──────────────────────────────────────────────
-    const PRICE_BW           = 30;   // $0.30/page
-    const PRICE_COLOR        = 85;   // $0.85/page
-    const PRICE_SHIPPING     = 400;  // $4.00 flat USPS First Class (up to 6 total pages)
-    const PRICE_OVERWEIGHT   = 250;  // $2.50 surcharge for letters over 6 total sheets
-    const PRICE_SERVICE_FEE  = 150;  // $1.50
-    const PRICE_LARGE_ORDER  = 500;  // $5.00 when > 100 pages
-    const MINIMUM_ORDER      = 500;  // $5.00 minimum
+    const PRICE_BW           = 30;   
+    const PRICE_COLOR        = 85;   
+    const PRICE_SHIPPING     = 400;  
+    const PRICE_OVERWEIGHT   = 250;  
+    const PRICE_SERVICE_FEE  = 150;  
+    const PRICE_LARGE_ORDER  = 500;  
+    const MINIMUM_ORDER      = 500;  
 
     const pricePerPage   = printType === 'color' ? PRICE_COLOR : PRICE_BW;
     const printTotal     = billablePages * pricePerPage;
@@ -119,7 +98,7 @@ exports.handler = async (event) => {
       quantity: 1,
     });
 
-    // Overweight Envelope Fee (added if billablePages > 6)
+    // Overweight Envelope Fee
     if (overweightFee > 0) {
       lineItems.push({
         price_data: {
@@ -170,8 +149,8 @@ exports.handler = async (event) => {
     // ── Build Stripe Metadata ───────────────────────────────────────────────
     const completeMetadata = {
       file_url:            String(fileUrl).slice(0, 499),
-      page_count:          String(billablePages), // Store the absolute printed sheet count (uploaded + 1)
-      uploaded_page_count: String(uploadedPages), // Store raw uploaded quantity for audit logging
+      page_count:          String(billablePages), 
+      uploaded_page_count: String(uploadedPages), 
       print_type:          printType,
       mail_type:           mailType,
       paper_size:          paperSize,
@@ -214,4 +193,4 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: error.message }),
     };
   }
-};
+}

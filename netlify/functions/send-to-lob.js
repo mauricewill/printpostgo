@@ -1,9 +1,10 @@
 import { PDFDocument } from 'pdf-lib';
-import Busboy from 'busboy';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
 
-// --- PDF NORMALIZATION HELPER ---
+/**
+ * Resizes an incoming PDF buffer to standard US Letter dimensions (8.5 x 11 inches)
+ */
 async function normalizePdfToLetter(pdfBuffer) {
   const TARGET_WIDTH = 8.5 * 72;  // 612 pts
   const TARGET_HEIGHT = 11 * 72;  // 792 pts
@@ -40,103 +41,63 @@ async function normalizePdfToLetter(pdfBuffer) {
   return Buffer.from(pdfBytes);
 }
 
-// --- HELPER TO PARSE MULTIPART FORM ---
-function parseMultipartForm(event) {
-  return new Promise((resolve, reject) => {
-    const busboy = Busboy({ headers: event.headers });
-    const result = { files: {}, fields: {} };
+/**
+ * Main export used by stripe-webhook.js
+ */
+export async function sendToLob(orderDetails, sessionId) {
+  if (!orderDetails.fileUrl) {
+    throw new Error('Missing fileUrl in order details');
+  }
 
-    busboy.on('file', (fieldname, file, info) => {
-      const buffers = [];
-      file.on('data', (data) => buffers.push(data));
-      file.on('end', () => {
-        result.files[fieldname] = {
-          buffer: Buffer.concat(buffers),
-          filename: info.filename,
-          mimeType: info.mimeType
-        };
-      });
-    });
+  // 1. Download the PDF file into a buffer
+  console.log(`📥 Downloading PDF file for auto-resizing: ${orderDetails.fileUrl}`);
+  const fileResponse = await fetch(orderDetails.fileUrl);
+  if (!fileResponse.ok) {
+    throw new Error(`Failed to download PDF from URL: ${fileResponse.statusText}`);
+  }
+  const originalPdfBuffer = await fileResponse.buffer();
 
-    busboy.on('field', (fieldname, val) => {
-      result.fields[fieldname] = val;
-    });
+  // 2. Automatically intercept and fix dimensions 
+  console.log('📐 Normalizing dimensions to 8.5 in x 11 in...');
+  const letterSizePdfBuffer = await normalizePdfToLetter(originalPdfBuffer);
 
-    busboy.on('finish', () => resolve(result));
-    busboy.on('error', (err) => reject(err));
+  // 3. Build Multipart payload required by Lob API
+  const lobForm = new FormData();
+  
+  lobForm.append('description', `PrintPostGo Order — Session: ${sessionId}`);
+  lobForm.append('to[name]', orderDetails.recipient.name);
+  lobForm.append('to[address_line1]', orderDetails.recipient.address); // Note: Assumes single string format or adjust to object properties if broken out
+  lobForm.append('from[name]', orderDetails.sender.name);
+  lobForm.append('from[address_line1]', orderDetails.sender.address);
+  lobForm.append('color', orderDetails.printType === 'color' ? 'true' : 'false');
+  lobForm.append('mail_type', 'usps_first_class'); // Map economy mapping to Lob API property
+  lobForm.append('address_placement', 'insert_blank_page');
 
-    // Write the Netlify event body stream into busboy
-    busboy.write(Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8'));
-    busboy.end();
+  // Attach the freshly modified binary buffer directly as the file parameter
+  lobForm.append('file', letterSizePdfBuffer, {
+    filename: 'normalized_document.pdf',
+    contentType: 'application/pdf',
   });
-}
 
-// --- MAIN NETLIFY HANDLER ---
-export async function handler(event, context) {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+  // 4. Send payload to Lob API
+  const apiKey = process.env.LOB_SECRET_API_KEY || process.env.LOB_API_KEY;
+  const lobResponse = await fetch('https://api.lob.com/v1/letters', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${Buffer.from(apiKey + ':').toString('base64')}`,
+      ...lobForm.getHeaders()
+    },
+    body: lobForm
+  });
+
+  const lobData = await lobResponse.json();
+
+  if (!lobResponse.ok) {
+    throw new Error(lobData.error?.message || JSON.stringify(lobData));
   }
 
-  try {
-    // 1. Parse incoming user file from front-end request
-    const parsedData = await parseMultipartForm(event);
-    const userFile = parsedData.files.file; // Assumes your frontend input key is named 'file'
-
-    if (!userFile) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'No PDF file provided.' }) };
-    }
-
-    // 2. Automatically intercept and fix dimensions 
-    console.log(`Normalizing file: ${userFile.filename}`);
-    const letterSizePdfBuffer = await normalizePdfToLetter(userFile.buffer);
-
-    // 3. Build Multipart payload required by Lob API
-    const lobForm = new FormData();
-    
-    // Dynamically append your required address parameters sent from frontend, or hardcode them
-    lobForm.append('description', parsedData.fields.description || 'PrintPostGo Mailer');
-    lobForm.append('to', parsedData.fields.to_address_id || 'adr_xxxxxxxxxx'); 
-    lobForm.append('from', parsedData.fields.from_address_id || 'adr_xxxxxxxxxx');
-    lobForm.append('color', 'true');
-    
-    // Attach the freshly modified binary buffer directly as the file parameter
-    lobForm.append('file', letterSizePdfBuffer, {
-      filename: 'normalized_document.pdf',
-      contentType: 'application/pdf',
-    });
-
-    // 4. Send payload to Lob API
-    const lobResponse = await fetch('https://api.lob.com/v1/letters', {
-      method: 'POST',
-      headers: {
-        // Basic auth using your Lob secret API key stored in Netlify environment variables
-        'Authorization': `Basic ${Buffer.from(process.env.LOB_SECRET_API_KEY + ':').toString('base64')}`,
-        ...lobForm.getHeaders()
-      },
-      body: lobForm
-    });
-
-    const lobData = await lobResponse.json();
-
-    if (!lobResponse.ok) {
-      console.error('Lob failure:', lobData);
-      return {
-        statusCode: lobResponse.status,
-        body: JSON.stringify({ error: 'Lob processing error', details: lobData })
-      };
-    }
-
-    // Success! Return Lob response payload back to your frontend UI
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, data: lobData })
-    };
-
-  } catch (error) {
-    console.error('Server error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error', message: error.message })
-    };
-  }
+  return {
+    lobId: lobData.id,
+    expectedDeliveryDate: lobData.expected_delivery_date
+  };
 }

@@ -1,18 +1,11 @@
-/**
- * stripe-webhook.js
- * ──────────────────────────────────────────────────────────────────────────
- * Receives Stripe webhook events and orchestrates automated mailing fulfillment.
- * ──────────────────────────────────────────────────────────────────────────
- */
+import Stripe from 'stripe';
+import sgMail from '@sendgrid/mail';
+import { sendToLob } from './send-to-lob.js'; // Note the .js extension required for ES Modules
 
-const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const sgMail  = require('@sendgrid/mail');
-const { sendToLob } = require('./send-to-lob');
-
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-exports.handler = async (event) => {
-
+export async function handler(event, context) {
   // ── 1. Parse the incoming Stripe event ──────────────────────────────────
   let stripeEvent;
   try {
@@ -48,8 +41,8 @@ exports.handler = async (event) => {
     paymentStatus:      session.payment_status,
     amountTotal:        session.amount_total,
     fileUrl:            meta.file_url,
-    pageCount:          meta.page_count,          // Total billable physical pages (uploaded + 1 address sheet)
-    uploadedPageCount:  meta.uploaded_page_count  || String(Math.max((parseInt(meta.page_count, 10) - 1), 1)), // Fallback
+    pageCount:          meta.page_count,          
+    uploadedPageCount:  meta.uploaded_page_count  || String(Math.max((parseInt(meta.page_count, 10) - 1), 1)), 
     printType:          meta.print_type           || 'bw',
     mailType:           'economy', 
     paperSize:          'letter',  
@@ -71,15 +64,17 @@ exports.handler = async (event) => {
   let lobId      = null;
   let lobSuccess = false;
   let lobError   = null;
+  let expectedDeliveryDate = null;
 
   // ── Step A: Call Lob ────────────────────────────────────────────────────
   try {
-    console.log('📮 Calling Lob API with automatic cover page insertion...');
+    console.log('📮 Calling Lob API with automatic dimensions scaling adjustments...');
     const lobResult = await sendToLob(orderDetails, session.id);
     lobSuccess = true;
     lobId      = lobResult.lobId;
+    expectedDeliveryDate = lobResult.expectedDeliveryDate;
     console.log('✅ Lob letter submitted:', lobId);
-    console.log('📅 Expected delivery:', lobResult.expectedDeliveryDate);
+    console.log('📅 Expected delivery:', expectedDeliveryDate);
   } catch (err) {
     lobError = err.message || 'Unknown Lob error';
     console.error('❌ Lob submission failed:', lobError);
@@ -87,7 +82,8 @@ exports.handler = async (event) => {
 
   // ── Step B: Send operator notification email ────────────────────────────
   try {
-      const isTestMode = (process.env.LOB_API_KEY || '').startsWith('test_');
+      const apiKeyCheck = process.env.LOB_SECRET_API_KEY || process.env.LOB_API_KEY || '';
+      const isTestMode = apiKeyCheck.startsWith('test_');
 
       const subjectPrefix = lobSuccess
         ? (isTestMode ? '[TEST] ✅ Auto-Mailed' : '✅ Auto-Mailed')
@@ -159,6 +155,7 @@ exports.handler = async (event) => {
           <span class="label">Address Placement</span>
           <span class="value">insert_blank_page (Cover address sheet)</span>
         </div>
+        ${expectedDeliveryDate ? `<div class="row"><span class="label">Expected Delivery</span><span class="value">${expectedDeliveryDate}</span></div>` : ''}
         <div class="row">
           <span class="label">Dashboard</span>
           <span class="value"><a href="https://dashboard.lob.com/letters">View in Lob ↗</a></span>
@@ -225,4 +222,4 @@ exports.handler = async (event) => {
     statusCode: 200,
     body: JSON.stringify({ received: true }),
   };
-};
+}
