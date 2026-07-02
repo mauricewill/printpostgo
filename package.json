@@ -2,8 +2,13 @@
   "name": "printpostgo-functions",
   "version": "1.0.0",
   "description": "Backend functions for PrintPostGo",
+  "type": "module",
   "dependencies": {
-    "stripe": "^14.14.0",
-    "@sendgrid/mail": "^8.1.0"
+    "@sendgrid/mail": "^8.1.0",
+    "busboy": "^1.6.0",
+    "form-data": "^4.0.0",
+    "node-fetch": "^3.3.2",
+    "pdf-lib": "^1.17.1",
+    "stripe": "^14.14.0"
   }
 }
