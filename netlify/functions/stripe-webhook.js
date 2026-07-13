@@ -1,131 +1,96 @@
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+// IMPORTANT: This endpoint must receive the RAW request body (not JSON.parse'd)
+// for Stripe's signature verification to work. In Netlify, disable any body
+// parsing for this function and make sure `event.body` is the untouched
+// payload Stripe sent. If Netlify delivers it base64-encoded, decode first.
 export async function handler(event, context) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const signature = event.headers['stripe-signature'];
+  if (!signature) {
+    return { statusCode: 400, body: 'Missing Stripe signature header.' };
+  }
+
+  const rawBody = event.isBase64Encoded
+    ? Buffer.from(event.body, 'base64')
+    : event.body;
+
+  let stripeEvent;
   try {
-    const data = JSON.parse(event.body);
-    const { pageCount, printType, mailType, customerEmail, fileUrl, metadata } = data;
+    // constructEvent verifies the payload was actually sent by Stripe and
+    // hasn't been tampered with — never trust an unverified webhook body.
+    stripeEvent = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return { statusCode: 400, body: `Webhook Error: ${err.message}` };
+  }
 
-    const lineItems = [];
+  try {
+    switch (stripeEvent.type) {
+      case 'checkout.session.completed': {
+        const session = stripeEvent.data.object;
 
-    // 1. Dynamic Print Pages (Using Quantity for precise per-page itemization)
-    const pageCostCents = printType === 'color' ? 85 : 30;
-    const printLabel = printType === 'color' ? 'Full Color' : 'Black & White';
-    
-    lineItems.push({
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: `Document Printing (${printLabel})`,
-          description: `${pageCount} pages at $${(pageCostCents / 100).toFixed(2)} per page`,
-        },
-        unit_amount: pageCostCents,
-      },
-      quantity: pageCount,
-    });
+        // Payment is confirmed at this point. This is the correct place to
+        // kick off fulfillment (send the file + metadata to your print/mail
+        // pipeline), NOT at checkout-session creation time, since a session
+        // being created doesn't mean it was ever paid.
+        const {
+          pageCount,
+          printType,
+          mailType,
+          fileUrl,
+          sender,
+          sender_address,
+          recipient,
+          recipient_address,
+        } = session.metadata || {};
 
-    // 2. Shipping & Postage Tier Selection
-    const shippingRatesCents = {
-      economy: 400,       // $4.00
-      standard: 1700,     // $17.00
-      certified: 2100     // $21.00
-    };
-    const shippingCostCents = shippingRatesCents[mailType] || 400;
+        console.log('Payment confirmed for session:', session.id, {
+          customerEmail: session.customer_details?.email,
+          amountTotal: session.amount_total,
+          pageCount,
+          printType,
+          mailType,
+          fileUrl,
+          sender,
+          sender_address,
+          recipient,
+          recipient_address,
+        });
 
-    let shippingLabel = 'Standard First-Class Mail Economy Delivery';
-    if (mailType === 'standard') {
-      shippingLabel = 'USPS Priority Mail (Tracking included)';
-    } else if (mailType === 'certified') {
-      shippingLabel = 'USPS Certified + Electronic Return Receipt';
+        // TODO: replace with your actual fulfillment trigger, e.g.:
+        // await triggerPrintAndMailJob({ session });
+        // await sendOrderConfirmationEmail({ session });
+
+        break;
+      }
+
+      case 'checkout.session.expired': {
+        const session = stripeEvent.data.object;
+        console.log('Checkout session expired without payment:', session.id);
+        // TODO: clean up any provisional records, delete unclaimed uploaded
+        // files (e.g. the Firebase Storage object referenced in metadata.fileUrl)
+        // so abandoned carts don't leave orphaned files.
+        break;
+      }
+
+      default:
+        // Unhandled event types are expected and fine to ignore — Stripe
+        // sends many event types; only listen for the ones you act on.
+        console.log(`Unhandled Stripe event type: ${stripeEvent.type}`);
     }
 
-    lineItems.push({
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: `USPS Shipping: ${shippingLabel}`,
-          description: 'Secure physical postage',
-        },
-        unit_amount: shippingCostCents,
-      },
-      quantity: 1,
-    });
-
-    // 3. Processing & Collation Service Fee
-    lineItems.push({
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: 'Fulfillment Service Fee',
-          description: 'Document stuffing, custom envelopes, and automated sorting',
-        },
-        unit_amount: 150, // $1.50
-      },
-      quantity: 1,
-    });
-
-    // 4. Overweight Surcharges (Restricted to Economy envelopes exceeding 10 sheets)
-    if (pageCount > 10 && mailType === 'economy') {
-      lineItems.push({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Overweight Envelope Surcharge',
-            description: 'Required processing premium for letters exceeding 10 pages',
-          },
-          unit_amount: 250, // $2.50
-        },
-        quantity: 1,
-      });
-    }
-
-    // 5. Bulk Order Surcharges (Processing complex orders exceeding 100 sheets)
-    if (pageCount > 100) {
-      lineItems.push({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Large Order Surcharge',
-            description: 'Required manual handling fee for orders exceeding 100 pages',
-          },
-          unit_amount: 500, // $5.00
-        },
-        quantity: 1,
-      });
-    }
-
-    // 6. Generate Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      customer_email: customerEmail,
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: `${process.env.URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.URL}/#start-order`,
-      metadata: {
-        ...metadata,
-        pageCount: pageCount.toString(),
-        printType,
-        mailType: mailType || 'economy',
-        fileUrl: fileUrl || ''
-      },
-    });
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: session.url }),
-    };
+    // Always return 200 quickly once verified & processed, or Stripe will retry.
+    return { statusCode: 200, body: JSON.stringify({ received: true }) };
   } catch (error) {
-    console.error('Error generating checkout session:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to build checkout gateway.' }),
-    };
+    console.error('Error processing webhook event:', error);
+    // Returning 500 tells Stripe to retry delivery later.
+    return { statusCode: 500, body: JSON.stringify({ error: 'Webhook handler failed.' }) };
   }
 }
