@@ -6,10 +6,11 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-const SUPPORT_EMAIL = 'support@printpost.com';
-// Must be a sender/domain verified in your SendGrid account, or SendGrid
-// will reject the send with a 403. Set this in your environment.
-const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'orders@printpost.com';
+const SUPPORT_EMAIL = 'support@printpostgo.com';
+// Must be a sender verified in SendGrid's Single Sender Verification (or a
+// verified domain), or SendGrid will reject the send with a 403.
+// Verified sender per SendGrid dashboard: maurice@printpostgo.com
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'maurice@printpostgo.com';
 
 // SendGrid rejects attachments over 30MB total request size. Firebase Storage
 // PDFs are usually small, but this guards against silently failing on an
@@ -57,7 +58,8 @@ ${fileUrl || 'No file URL found in metadata'}
   const msg = {
     to: SUPPORT_EMAIL,
     from: FROM_EMAIL,
-    replyTo: customerEmail !== 'unknown' ? customerEmail : undefined,
+    // Verified reply-to per SendGrid Single Sender Verification.
+    replyTo: SUPPORT_EMAIL,
     subject: `New Order — ${pageCount} pages (${printType}, ${mailType}) — ${session.id}`,
     text: textBody,
   };
