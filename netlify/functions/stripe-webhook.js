@@ -1,7 +1,102 @@
 import Stripe from 'stripe';
+import sgMail from '@sendgrid/mail';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+const SUPPORT_EMAIL = 'support@printpost.com';
+// Must be a sender/domain verified in your SendGrid account, or SendGrid
+// will reject the send with a 403. Set this in your environment.
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'orders@printpost.com';
+
+// SendGrid rejects attachments over 30MB total request size. Firebase Storage
+// PDFs are usually small, but this guards against silently failing on an
+// oversized upload.
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024; // 25MB, leaving headroom
+
+async function sendOrderNotificationEmail(session) {
+  const {
+    pageCount,
+    printType,
+    mailType,
+    fileUrl,
+    sender,
+    sender_address,
+    recipient,
+    recipient_address,
+  } = session.metadata || {};
+
+  const customerEmail = session.customer_details?.email || 'unknown';
+  const amountTotal = session.amount_total != null ? `$${(session.amount_total / 100).toFixed(2)}` : 'unknown';
+
+  const textBody = `New paid order received.
+
+Stripe Session: ${session.id}
+Customer Email: ${customerEmail}
+Amount Paid: ${amountTotal}
+
+--- Print Details ---
+Pages: ${pageCount}
+Print Type: ${printType}
+Mail Type: ${mailType}
+
+--- Sender ---
+${sender}
+${sender_address}
+
+--- Recipient ---
+${recipient}
+${recipient_address}
+
+--- File ---
+${fileUrl || 'No file URL found in metadata'}
+`;
+
+  const msg = {
+    to: SUPPORT_EMAIL,
+    from: FROM_EMAIL,
+    replyTo: customerEmail !== 'unknown' ? customerEmail : undefined,
+    subject: `New Order — ${pageCount} pages (${printType}, ${mailType}) — ${session.id}`,
+    text: textBody,
+  };
+
+  // Attach the PDF itself, not just a link, per requirements. If the fetch
+  // or attachment fails for any reason, we still send the email with the
+  // fileUrl included in the body so the order isn't lost.
+  if (fileUrl) {
+    try {
+      const fileResponse = await fetch(fileUrl);
+      if (!fileResponse.ok) {
+        throw new Error(`Fetching PDF failed: ${fileResponse.status} ${fileResponse.statusText}`);
+      }
+
+      const contentLength = Number(fileResponse.headers.get('content-length') || 0);
+      if (contentLength && contentLength > MAX_ATTACHMENT_BYTES) {
+        console.warn(`PDF for session ${session.id} is ${contentLength} bytes, exceeding the attachment size guard — skipping attachment, link included instead.`);
+      } else {
+        const arrayBuffer = await fileResponse.arrayBuffer();
+        const base64Content = Buffer.from(arrayBuffer).toString('base64');
+
+        msg.attachments = [
+          {
+            content: base64Content,
+            filename: `order-${session.id}.pdf`,
+            type: 'application/pdf',
+            disposition: 'attachment',
+          },
+        ];
+      }
+    } catch (fetchErr) {
+      console.error(`Could not fetch/attach PDF for session ${session.id}:`, fetchErr.message);
+      // Fall through and send the email without the attachment — the
+      // fileUrl in the body is still usable as a fallback.
+    }
+  }
+
+  await sgMail.send(msg);
+}
 
 // IMPORTANT: This endpoint must receive the RAW request body (not JSON.parse'd)
 // for Stripe's signature verification to work. In Netlify, disable any body
@@ -64,9 +159,22 @@ export async function handler(event, context) {
           recipient_address,
         });
 
-        // TODO: replace with your actual fulfillment trigger, e.g.:
+        try {
+          await sendOrderNotificationEmail(session);
+          console.log(`Order notification email sent to ${SUPPORT_EMAIL} for session ${session.id}`);
+        } catch (emailErr) {
+          // Log full SendGrid error detail (response body has the real reason,
+          // e.g. unverified sender, bad API key, etc.) but don't let an email
+          // failure make Stripe think the whole webhook failed and retry —
+          // the payment itself was already handled successfully above.
+          console.error(
+            `Failed to send order notification email for session ${session.id}:`,
+            emailErr.response?.body || emailErr.message
+          );
+        }
+
+        // TODO: trigger the actual print/mail fulfillment job here too, e.g.:
         // await triggerPrintAndMailJob({ session });
-        // await sendOrderConfirmationEmail({ session });
 
         break;
       }
