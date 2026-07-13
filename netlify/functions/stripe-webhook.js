@@ -1,69 +1,131 @@
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function handler(event, context) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const sig = event.headers['stripe-signature'];
-  let stripeEvent;
-
   try {
-    stripeEvent = stripe.webhooks.constructEvent(event.body, sig, endpointSecret);
-  } catch (err) {
-    console.error(`Webhook validation failure: ${err.message}`);
-    return { statusCode: 400, body: `Webhook Error: ${err.message}` };
-  }
+    const data = JSON.parse(event.body);
+    const { pageCount, printType, mailType, customerEmail, fileUrl, metadata } = data;
 
-  if (stripeEvent.type === 'checkout.session.completed') {
-    const session = stripeEvent.data.object;
+    const lineItems = [];
 
-    // Harvesting synchronized order variables passed through from Checkout creation payload
-    const { 
-      pageCount, 
-      printType, 
-      mailType, // Aligned with updated frontend config variables (economy, standard, certified)
-      sender, 
-      sender_address, 
-      recipient, 
-      recipient_address,
-      fileUrl 
-    } = session.metadata;
+    // 1. Dynamic Print Pages (Using Quantity for precise per-page itemization)
+    const pageCostCents = printType === 'color' ? 85 : 30;
+    const printLabel = printType === 'color' ? 'Full Color' : 'Black & White';
     
-    const customerEmail = session.customer_details?.email || session.customer_email;
+    lineItems.push({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: `Document Printing (${printLabel})`,
+          description: `${pageCount} pages at $${(pageCostCents / 100).toFixed(2)} per page`,
+        },
+        unit_amount: pageCostCents,
+      },
+      quantity: pageCount,
+    });
 
-    console.log(`Processing Order for ${customerEmail} - Type: ${mailType}, Pages: ${pageCount}, Print Style: ${printType}`);
+    // 2. Shipping & Postage Tier Selection
+    const shippingRatesCents = {
+      economy: 400,       // $4.00
+      standard: 1700,     // $17.00
+      certified: 2100     // $21.00
+    };
+    const shippingCostCents = shippingRatesCents[mailType] || 400;
 
-    try {
-      // Downstream dispatch for physical printing and mailing services (e.g. Lob, Docs on Demand)
-      // Economy uses standard delivery, standard (Priority + Tracking) & certified use verified tracking carriers.
-      const trackingEnabled = ['standard', 'certified'].includes(mailType);
-      
-      console.log('Sending payload downstream with metadata:', {
-        sender,
-        sender_address,
-        recipient,
-        recipient_address,
-        printType,
-        pageCount: parseInt(pageCount, 10),
-        trackingEnabled,
-        fileUrl
-      });
-
-      // Example downstream payload routing implementation:
-      // await sendToMailingProvider({ sender, recipient, printType, trackingEnabled });
-      
-    } catch (fulfillmentError) {
-      console.error('Error processing mail pipeline connection:', fulfillmentError);
-      return { statusCode: 500, body: 'Fulfillment workflow pipeline error.' };
+    let shippingLabel = 'Standard First-Class Mail Economy Delivery';
+    if (mailType === 'standard') {
+      shippingLabel = 'USPS Priority Mail (Tracking included)';
+    } else if (mailType === 'certified') {
+      shippingLabel = 'USPS Certified + Electronic Return Receipt';
     }
-  }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ received: true }),
-  };
+    lineItems.push({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: `USPS Shipping: ${shippingLabel}`,
+          description: 'Secure physical postage',
+        },
+        unit_amount: shippingCostCents,
+      },
+      quantity: 1,
+    });
+
+    // 3. Processing & Collation Service Fee
+    lineItems.push({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: 'Fulfillment Service Fee',
+          description: 'Document stuffing, custom envelopes, and automated sorting',
+        },
+        unit_amount: 150, // $1.50
+      },
+      quantity: 1,
+    });
+
+    // 4. Overweight Surcharges (Restricted to Economy envelopes exceeding 10 sheets)
+    if (pageCount > 10 && mailType === 'economy') {
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Overweight Envelope Surcharge',
+            description: 'Required processing premium for letters exceeding 10 pages',
+          },
+          unit_amount: 250, // $2.50
+        },
+        quantity: 1,
+      });
+    }
+
+    // 5. Bulk Order Surcharges (Processing complex orders exceeding 100 sheets)
+    if (pageCount > 100) {
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Large Order Surcharge',
+            description: 'Required manual handling fee for orders exceeding 100 pages',
+          },
+          unit_amount: 500, // $5.00
+        },
+        quantity: 1,
+      });
+    }
+
+    // 6. Generate Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: customerEmail,
+      line_items: lineItems,
+      mode: 'payment',
+      success_url: `${process.env.URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.URL}/#start-order`,
+      metadata: {
+        ...metadata,
+        pageCount: pageCount.toString(),
+        printType,
+        mailType: mailType || 'economy',
+        fileUrl: fileUrl || ''
+      },
+    });
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: session.url }),
+    };
+  } catch (error) {
+    console.error('Error generating checkout session:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Failed to build checkout gateway.' }),
+    };
+  }
 }
