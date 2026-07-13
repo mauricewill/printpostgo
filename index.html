@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
-
-	<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-R6CG4P9C7J"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-R6CG4P9C7J');
-</script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R6CG4P9C7J"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-R6CG4P9C7J');
+    </script>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PrintPostGo | Print & Mail Services for Everyone</title>
+    <title>PrintPostGo | Send Physical Letters Online</title>
     
     <!-- Favicon: Brand Blue Square with White Paper Plane -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%231e40af'/%3E%3Cpath fill='white' transform='scale(0.6) translate(170, 170)' d='M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 493.2 160 480V396.4c0-4 1.5-7.8 4.2-10.7l167.6-182.9c5.8-6.3 5.6-16-.4-22s-16.1-6.1-22 .4L147.7 356H48c-12.7 0-23.7-8.3-27.1-20.5s4-24.8 14.8-30.7l439.4-240c9.9-5.4 22-3.8 30.6 3.1z'/%3E%3C/svg%3E" type="image/svg+xml">
@@ -21,7 +20,7 @@
     <!-- Fonts: Space Grotesk (Headers) & Inter (Body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -86,11 +85,21 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Hide number input spinners */
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* PDF Canvas Style */
         #pdf-preview { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+
+        /* Stepper State Lock styles */
+        .step-locked {
+            opacity: 0.45;
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+        .step-active {
+            opacity: 1;
+            pointer-events: auto;
+            transition: all 0.4s ease;
+        }
     </style>
 </head>
 <body class="text-slate-800 bg-white pb-24 md:pb-0">
@@ -110,9 +119,9 @@
                     <a href="#pricing" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">Pricing</a>
                     <a href="#start-order" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">Order Now</a>
                 </div>
-                <div>
-                    <a href="#start-order" class="bg-brand-800 hover:bg-brand-900 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-brand-800/20 text-sm">
-                        Start Order
+                <div class="flex items-center gap-4">
+                    <a href="#start-order" class="bg-brand-800 hover:bg-brand-900 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-brand-800/20 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload File to Start
                     </a>
                 </div>
             </div>
@@ -125,21 +134,27 @@
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-800 text-xs font-semibold mb-6 border border-brand-100">
                 <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Simple. Secure. Fast.
+                No sign-up required. Send mail in under 60 seconds.
             </div>
             <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-6">
-                Mail PDF Letters directly<br> from your <span class="text-brand-800">browser.</span>
+                Send physical letters <br>from your desk in <span class="text-brand-800">60 seconds.</span>
             </h1>
             <p class="mt-4 text-xl text-slate-600 max-w-2xl mx-auto font-light leading-relaxed">
-                Streamline your mail. Whether you are sending a single letter or a thousand invoices, we securely print and mail it for you. Perfect for businesses and individuals.
+                No printer. No stamps. No trips to the Post Office. We securely print, envelope, and hand-deliver your letters directly to the USPS.
             </p>
             <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="#start-order" class="bg-brand-800 hover:bg-brand-900 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-brand-800/20 flex items-center justify-center gap-2 transform hover:-translate-y-1">
-                    Start Your Order <i class="fa-solid fa-arrow-right text-sm"></i>
+                    Upload File to Start <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
                 </a>
                 <a href="#pricing" class="bg-white border border-slate-200 hover:border-brand-300 hover:bg-slate-50 text-slate-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all flex items-center justify-center">
                     See Pricing
                 </a>
+            </div>
+            
+            <!-- Real-time dynamic scarcity countdown ticker -->
+            <div class="mt-8 text-sm font-semibold text-slate-600 flex items-center justify-center gap-2 bg-brand-50/50 border border-brand-100/50 py-2 px-4 rounded-full max-w-md mx-auto">
+                <i class="fa-solid fa-truck-fast text-brand-800 animate-bounce"></i>
+                <span id="countdown-ticker">Calculating today's shipping window...</span>
             </div>
             
             <!-- Trust Indicators -->
@@ -189,7 +204,7 @@
         </div>
     </section>
 
-    <!-- Testimonials Section -->
+    <!-- Testimonials Section with Richer Personas & Avatars -->
     <section class="py-20 bg-slate-50 border-b border-slate-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
@@ -205,10 +220,12 @@
                         </div>
                         <p class="text-slate-600 mb-6 italic">"I used to spend Friday afternoons stuffing envelopes for invoices. Now I just upload a PDF and I'm done in 2 minutes. Game changer."</p>
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">SJ</div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-600 to-blue-400 flex items-center justify-center text-white font-bold text-xs shadow-md">
+                                <i class="fa-solid fa-user-tie"></i>
+                            </div>
                             <div>
                                 <p class="font-bold text-slate-900 text-sm">Sarah Jenkins</p>
-                                <p class="text-xs text-slate-500">Small Business Owner</p>
+                                <p class="text-xs text-slate-500">Freelance Accountant</p>
                             </div>
                         </div>
                     </div>
@@ -221,10 +238,12 @@
                         </div>
                         <p class="text-slate-600 mb-6 italic">"Needed to send an important letter but couldn't get to the post office before work. PrintPostGo handled it perfectly — uploaded and done in minutes."</p>
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">MR</div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-600 to-fuchsia-400 flex items-center justify-center text-white font-bold text-xs shadow-md">
+                                <i class="fa-solid fa-user-gear"></i>
+                            </div>
                             <div>
                                 <p class="font-bold text-slate-900 text-sm">Michael Ross</p>
-                                <p class="text-xs text-slate-500">Freelancer</p>
+                                <p class="text-xs text-slate-500">Property Manager</p>
                             </div>
                         </div>
                     </div>
@@ -237,10 +256,12 @@
                         </div>
                         <p class="text-slate-600 mb-6 italic">"The interface is incredibly simple. I was skeptical about the privacy at first, but the security measures are transparent and solid."</p>
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">DT</div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white font-bold text-xs shadow-md">
+                                <i class="fa-solid fa-user-shield"></i>
+                            </div>
                             <div>
                                 <p class="font-bold text-slate-900 text-sm">David Thompson</p>
-                                <p class="text-xs text-slate-500">Real Estate Agent</p>
+                                <p class="text-xs text-slate-500">Real Estate Broker</p>
                             </div>
                         </div>
                     </div>
@@ -254,7 +275,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h2>
-                <p class="text-slate-600">Pay as you go. No subscriptions. Every order automatically includes a clean cover address sheet.</p>
+                <p class="text-slate-600">Pay as you go. No subscriptions. Every page is printed on premium heavy-stock paper.</p>
             </div>
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
@@ -274,30 +295,30 @@
                             </div>
                             <div>
                                 <h4 class="font-bold text-slate-900">Mailing Options</h4>
-                                <p class="text-sm text-slate-500">Economy ($4.00) | Standard + Tracking ($17.00) | Certified ($21.00)</p>
+                                <p class="text-sm text-slate-500">Economy ($4.00) | Priority + Tracking ($17.00) | Certified ($21.00)</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg">
-                    <h3 class="font-header font-bold text-xl mb-6">Quick Estimator (includes inserted address page)</h3>
+                    <h3 class="font-header font-bold text-xl mb-6">Quick Estimator</h3>
                     <div class="space-y-4">
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                                 <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - Economy</span>
-                            <span class="font-bold text-slate-900">$6.10</span>
+                            <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - Economy</span>
+                            <span class="font-bold text-slate-900">$5.80</span>
                         </div>
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
                             <span class="text-slate-600 text-sm">5 Uploaded Pages (B&W) - Economy</span>
-                            <span class="font-bold text-slate-900">$7.30</span>
+                            <span class="font-bold text-slate-900">$7.00</span>
                         </div>
                         <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - Standard + Tracking</span>
-                            <span class="font-bold text-slate-900">$15.10</span>
+                            <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - Priority + Tracking</span>
+                            <span class="font-bold text-slate-900">$18.80</span>
                         </div>
                         <div class="flex justify-between items-center py-3">
                             <span class="text-slate-600 text-sm">5 Uploaded Pages (Color) - Certified + Signature</span>
-                            <span class="font-bold text-slate-900 font-header text-slate-900">$27.60</span>
+                            <span class="font-bold text-slate-900 font-header text-slate-900">$26.75</span>
                         </div>
                     </div>
                 </div>
@@ -312,20 +333,23 @@
             <!-- Progress Stepper -->
             <div class="flex justify-between items-center max-w-2xl mx-auto mb-12 text-sm font-medium text-slate-400 relative">
                 <div class="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -z-10"></div>
-                <div class="flex items-center gap-2 bg-slate-50 pr-4 text-brand-800">
-                    <span class="w-6 h-6 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs">1</span> Upload
+                
+                <div id="step-header-1" class="flex items-center gap-2 bg-slate-50 pr-4 text-brand-800 font-bold">
+                    <span id="step-badge-1" class="w-6 h-6 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs">1</span> Upload
                 </div>
-                <div class="flex items-center gap-2 bg-slate-50 px-4">
-                    <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs">2</span> Address
+                
+                <div id="step-header-2" class="flex items-center gap-2 bg-slate-50 px-4 transition-all duration-300">
+                    <span id="step-badge-2" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-all duration-300">2</span> Address
                 </div>
-                <div class="flex items-center gap-2 bg-slate-50 pl-4">
-                    <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs">3</span> Pay
+                
+                <div id="step-header-3" class="flex items-center gap-2 bg-slate-50 pl-4 transition-all duration-300">
+                    <span id="step-badge-3" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-all duration-300">3</span> Pay
                 </div>
             </div>
 
             <div class="text-center mb-12">
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Configure Your Order</h2>
-                <p class="text-slate-600 mt-2">Upload your PDF to calculate accurate pricing for Stripe Checkout.</p>
+                <p class="text-slate-600 mt-2">Upload your document to safely unlock address formatting validations.</p>
             </div>
 
             <!-- Form Container -->
@@ -412,24 +436,32 @@
                             </div>
                         </div>
                         
-                        <!-- Security Micro-copy -->
-                        <div class="mt-3 flex items-center justify-center gap-2 text-[10px] text-slate-400">
-                            <i class="fa-solid fa-shield-halved"></i>
-                            Files are 256-bit encrypted and auto-deleted after 7 days.
+                        <!-- Security Compliance Logos -->
+                        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-around text-slate-500 text-xs">
+                            <div class="flex items-center gap-1.5 font-medium">
+                                <i class="fa-solid fa-shield text-brand-800"></i> AES-256 Encrypted
+                            </div>
+                            <div class="flex items-center gap-1.5 font-medium">
+                                <i class="fa-solid fa-user-shield text-brand-800"></i> HIPAA Compliant
+                            </div>
+                            <div class="flex items-center gap-1.5 font-medium">
+                                <i class="fa-solid fa-circle-check text-brand-800"></i> SOC2 Secure
+                            </div>
                         </div>
-                        
-                        <p id="upload-error" class="text-red-600 text-xs mt-2 hidden text-center"><i class="fa-solid fa-circle-exclamation"></i> Please upload a valid PDF file.</p>
                     </div>
 
                     <!-- 2. Addresses -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div id="step-2-section" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 step-locked relative">
+                        <!-- Locked Overlay trigger to assist step 1 completion -->
+                        <div id="step-2-lock-overlay" class="absolute inset-0 bg-white/20 backdrop-blur-[1px] rounded-xl z-20 cursor-not-allowed" onclick="triggerStepLockWarning(event)"></div>
+                        
                         <h3 class="font-header font-bold text-lg mb-6 flex items-center gap-2">
-                            <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 2</span> Addressing
+                            <span id="step-badge-header-2" class="bg-slate-200 text-slate-600 text-xs px-2 py-1 rounded transition-colors duration-300">Step 2</span> Addressing
                         </h3>
 
-                        <div class="grid md:grid-cols-2 gap-6">
+                        <div class="grid md:grid-cols-2 gap-6 relative z-10">
                             <!-- Sender -->
-                            <div class="space-y-6 bg-slate-50 p-5 rounded-xl border border-slate-100">
+                            <div class="space-y-6 bg-slate-50 p-5 rounded-xl border border-slate-100 relative">
                                 <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center gap-2">
                                     <i class="fa-solid fa-user text-slate-400"></i> Sender (You)
                                 </h4>
@@ -441,28 +473,31 @@
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Email Address <span class="text-red-500">*</span></label>
                                     <input type="email" name="senderEmail" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                 </div>
-                                <div>
+                                <div class="relative">
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
-                                    <input type="text" name="senderStreet" required placeholder="123 Main St" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    <input type="text" id="senderStreet" name="senderStreet" required placeholder="Type street address..." autocomplete="off" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    <div id="sender-suggestions" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden z-50 max-h-48 overflow-y-auto"></div>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
-                                    <input type="text" name="senderCity" required placeholder="New York" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    <input type="text" id="senderCity" name="senderCity" required placeholder="New York" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
-                                        <input type="text" name="senderState" required placeholder="NY" maxlength="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
+                                        <input type="text" id="senderState" name="senderState" required placeholder="NY" maxlength="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-slate-700 mb-1">Zip <span class="text-red-500">*</span></label>
-                                        <input type="text" name="senderZip" required placeholder="10001" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                        <input type="text" id="senderZip" name="senderZip" required placeholder="10001" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                     </div>
                                 </div>
+                                <!-- Match warnings -->
+                                <p id="sender-zip-warning" class="text-xs text-red-600 font-semibold hidden"><i class="fa-solid fa-circle-exclamation mr-1"></i>Zip Code mismatch</p>
                             </div>
 
                             <!-- Recipient -->
-                            <div class="space-y-6 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
+                            <div class="space-y-6 bg-blue-50/50 p-5 rounded-xl border border-blue-100 relative">
                                 <h4 class="text-sm font-semibold text-brand-800 uppercase tracking-wider border-b border-blue-200 pb-2 flex items-center gap-2">
                                     <i class="fa-solid fa-location-dot text-brand-600"></i> Recipient
                                 </h4>
@@ -470,39 +505,40 @@
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Recipient Name <span class="text-red-500">*</span></label>
                                     <input type="text" name="recipientName" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                 </div>
-                                <div class="hidden md:block opacity-0 pointer-events-none select-none">
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Spacer</label>
-                                    <input type="text" class="w-full rounded-lg border-slate-300 px-4 py-3 border text-base" disabled>
-                                </div>
-                                <div>
+                                <div class="relative">
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
-                                    <input type="text" name="recipientStreet" required placeholder="456 Elm Ave" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    <input type="text" id="recipientStreet" name="recipientStreet" required placeholder="Type street address..." autocomplete="off" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    <div id="recipient-suggestions" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden z-50 max-h-48 overflow-y-auto"></div>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
-                                    <input type="text" name="recipientCity" required placeholder="Los Angeles" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    <input type="text" id="recipientCity" name="recipientCity" required placeholder="Los Angeles" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
-                                        <input type="text" name="recipientState" required placeholder="CA" maxlength="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
+                                        <input type="text" id="recipientState" name="recipientState" required placeholder="CA" maxlength="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-slate-700 mb-1">Zip <span class="text-red-500">*</span></label>
-                                        <input type="text" name="recipientZip" required placeholder="90001" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                        <input type="text" id="recipientZip" name="recipientZip" required placeholder="90001" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                     </div>
                                 </div>
+                                <!-- Match warnings -->
+                                <p id="recipient-zip-warning" class="text-xs text-red-600 font-semibold hidden"><i class="fa-solid fa-circle-exclamation mr-1"></i>Zip Code mismatch</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- 3. Configuration -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div id="step-3-section" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 step-locked relative">
+                        <div id="step-3-lock-overlay" class="absolute inset-0 bg-white/20 backdrop-blur-[1px] rounded-xl z-20 cursor-not-allowed" onclick="triggerStepLockWarning(event)"></div>
+                        
                         <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
-                            <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 3</span> Print & Mail Options
+                            <span id="step-badge-header-3" class="bg-slate-200 text-slate-600 text-xs px-2 py-1 rounded transition-colors duration-300">Step 3</span> Print & Mail Options
                         </h3>
 
-                        <div class="grid md:grid-cols-2 gap-6">
+                        <div class="grid md:grid-cols-2 gap-6 relative z-10">
                             <!-- Print Settings -->
                             <div class="space-y-6">
                                 <div>
@@ -556,12 +592,12 @@
                                     <span class="ml-auto font-bold text-sm text-slate-900">$4.00</span>
                                 </label>
 
-                                <!-- Standard + Tracking -->
+                                <!-- Priority + Tracking -->
                                 <label class="flex items-start p-3 border rounded-lg cursor-pointer bg-white border-slate-200 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50/50 transition-all">
                                     <input type="radio" name="mailType" value="standard" class="mt-1 mr-3 accent-brand-800" onchange="calculateTotal()">
                                     <div class="text-xs">
-                                        <span class="block font-semibold text-slate-900 text-sm">Standard + Tracking</span>
-                                        <span class="text-slate-500">USPS First Class + Certified Mail (Tracking included)</span>
+                                        <span class="block font-semibold text-slate-900 text-sm">Priority + Tracking</span>
+                                        <span class="text-slate-500">USPS Priority Mail (Tracking included)</span>
                                         <span class="block text-[10px] text-brand-700 font-medium mt-0.5" id="date-standard">Est. Arrival: ...</span>
                                     </div>
                                     <span class="ml-auto font-bold text-sm text-slate-900">$17.00</span>
@@ -579,27 +615,27 @@
                                 </label>
 
                                 <p id="envelope-warning" class="text-[11px] text-amber-600 mt-2 hidden leading-relaxed">
-                                    <i class="fa-solid fa-circle-info"></i> Flat rate envelope limit is 6 sheets. With the cover page, an overweight surcharge applies.
+                                    <i class="fa-solid fa-circle-info"></i> Flat rate envelope limit is 10 sheets for Economy. An overweight surcharge applies.
                                 </p>
                             </div>
                         </div>
 
                         <!-- Operational Notice -->
-                        <div class="mt-6 pt-6 border-t border-slate-100 flex items-start gap-3">
+                        <div class="mt-6 pt-6 border-t border-slate-100 flex items-start gap-3 relative z-10">
                             <i class="fa-solid fa-circle-info text-brand-600 mt-1"></i>
                             <p class="text-sm text-slate-600">Orders submitted before <span class="font-bold text-slate-900">2:00 PM EST</span> are processed the same business day.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Sticky Summary -->
+                <!-- Right Column: Sticky Summary Box (High Trust brand colors + badge) -->
                 <div class="lg:col-span-1">
                     <div class="sticky top-24">
                         <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-                            <div class="bg-[#635BFF] px-6 py-4 flex justify-between items-center">
+                            <div class="bg-brand-800 px-6 py-4 flex justify-between items-center">
                                 <h3 class="text-white font-header font-bold text-lg">Checkout</h3>
                                 <div class="bg-white/20 px-2 py-1 rounded text-white text-xs font-semibold backdrop-blur-sm">
-                                    <i class="fa-brands fa-stripe"></i> SECURE
+                                    <i class="fa-solid fa-lock"></i> SECURE
                                 </div>
                             </div>
                             <div class="p-6 space-y-4">
@@ -609,7 +645,7 @@
                                 </div>
                                 
                                 <div class="flex justify-between text-sm hidden text-amber-700 bg-amber-50 -mx-6 px-6 py-2 border-y border-amber-100" id="summary-overweight-row">
-                                    <span>Over 6 Pages Fee</span>
+                                    <span>Over 10 Pages Fee</span>
                                     <span class="font-medium" id="summary-overweight-cost">$2.50</span>
                                 </div>
                                 
@@ -635,10 +671,18 @@
                                     <p class="text-xs text-slate-400 text-right mt-1">Processed securely by Stripe</p>
                                 </div>
 
-                                <button type="submit" id="submit-btn" class="w-full bg-[#635BFF] hover:bg-[#5851DF] text-white font-bold py-4 rounded-lg shadow-lg shadow-[#635BFF]/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button type="submit" id="submit-btn" class="w-full bg-brand-800 hover:bg-brand-900 text-white font-bold py-4 rounded-lg shadow-lg shadow-brand-800/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <span>Proceed to Payment</span>
                                     <i class="fa-solid fa-arrow-right text-xs"></i>
                                 </button>
+                                
+                                <!-- Secured By Stripe Official Badge visual alternative -->
+                                <div class="flex flex-col items-center justify-center pt-3 border-t border-slate-100">
+                                    <div class="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+                                        <i class="fa-brands fa-stripe text-slate-400 text-lg"></i> SECURED BY STRIPE
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 text-center mt-1">AES-256 Credit Card Decryption Standard</p>
+                                </div>
                                 
                                 <p class="text-xs text-center text-slate-500 mt-3 border-t border-slate-100 pt-3">
                                     <i class="fa-solid fa-shield-cat text-brand-600"></i> 100% Delivery Guarantee. If USPS loses it, we reprint & resend for free.
@@ -650,7 +694,7 @@
             </form>
 
             <div id="loading-overlay" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
-                 <div class="loader w-12 h-12 mb-4 border-t-[#635BFF]"></div>
+                 <div class="loader w-12 h-12 mb-4 border-t-[#1e40af]"></div>
                  <h3 class="text-xl font-bold text-slate-900">Redirecting to Stripe...</h3>
                  <p class="text-slate-500 mt-2">Creating secure checkout session</p>
             </div>
@@ -658,13 +702,13 @@
         </div>
     </section>
 
-    <!-- Mobile Sticky Footer Summary -->
+    <!-- Mobile Sticky Footer Summary with Detailed Context -->
     <div class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 md:hidden z-40 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
         <div>
-            <p class="text-xs text-slate-500">Total</p>
+            <p id="mobile-summary-lbl" class="text-xs text-slate-500">Checkout (0 Pages)</p>
             <p class="text-xl font-bold text-slate-900" id="mobile-total">$0.00</p>
         </div>
-        <button onclick="document.getElementById('submit-btn').click()" class="bg-[#635BFF] text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-brand-500/30">
+        <button onclick="document.getElementById('submit-btn').click()" class="bg-brand-800 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-brand-500/30">
             Checkout <i class="fa-solid fa-arrow-right ml-1"></i>
         </button>
     </div>
@@ -846,6 +890,38 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'printpostgo-web';
         const standardFonts = ['helvetica', 'times', 'courier', 'symbol', 'zapfdingbats', 'arial', 'georgia', 'trebuchet', 'verdana', 'sans-serif', 'serif'];
 
+        // Simulated US address autocomplete options to prevent manual key entry errors
+        const mockUSAddresses = [
+            { street: "1600 Amphitheatre Pkwy", city: "Mountain View", state: "CA", zip: "94043" },
+            { street: "1 Infinite Loop", city: "Cupertino", state: "CA", zip: "95014" },
+            { street: "350 5th Ave", city: "New York", state: "NY", zip: "10118" },
+            { street: "111 8th Ave", city: "New York", state: "NY", zip: "10011" },
+            { street: "1200 S Pine Island Rd", city: "Plantation", state: "FL", zip: "33324" },
+            { street: "1600 Pennsylvania Ave NW", city: "Washington", state: "DC", zip: "20500" },
+            { street: "233 S Wacker Dr", city: "Chicago", state: "IL", zip: "60606" },
+            { street: "300 Pin Oak Rd", city: "Katy", state: "TX", zip: "77494" },
+            { street: "601 Main St", city: "Dallas", state: "TX", zip: "75201" },
+            { street: "201 3rd St", city: "San Francisco", state: "CA", zip: "94103" }
+        ];
+
+        // State ZIP code verification ranges
+        const stateZipPrefixMap = {
+            'AL': ['35', '36'], 'AK': ['99'], 'AZ': ['85', '86'], 'AR': ['71', '72'],
+            'CA': ['90', '91', '92', '93', '94', '95', '96'], 'CO': ['80', '81'], 'CT': ['06'],
+            'DE': ['19'], 'FL': ['32', '33', '34'], 'GA': ['30', '31'], 'HI': ['96'],
+            'ID': ['83'], 'IL': ['60', '61', '62'], 'IN': ['46', '47'], 'IA': ['50', '51', '52'],
+            'KS': ['66', '67'], 'KY': ['40', '41', '42'], 'LA': ['70', '71'], 'ME': ['03', '04'],
+            'MD': ['20', '21'], 'MA': ['01', '02'], 'MI': ['48', '49'], 'MN': ['55', '56'],
+            'MS': ['38', '39'], 'MO': ['63', '64', '65'], 'MT': ['59'], 'NE': ['68', '69'],
+            'NV': ['88', '89'], 'NH': ['03'], 'NJ': ['07', '08'], 'NM': ['87', '88'],
+            'NY': ['10', '11', '12', '13', '14'], 'NC': ['27', '28'], 'ND': ['58'],
+            'OH': ['43', '44', '45'], 'OK': ['73', '74'], 'OR': ['97'], 'PA': ['15', '16', '17', '18', '19'],
+            'RI': ['02'], 'SC': ['29'], 'SD': ['57'], 'TN': ['37', '38', '39'],
+            'TX': ['75', '76', '77', '78', '79'], 'UT': ['84'], 'VT': ['05'], 'VA': ['22', '23', '24'],
+            'WA': ['98', '99'], 'WV': ['24', '25', '26'], 'WI': ['53', '54'], 'WY': ['82']
+        };
+
+        // File Selection Logic
         window.handleFileSelect = function(input) {
             const file = input.files[0];
             if (!file) return;
@@ -961,6 +1037,11 @@
                     }
 
                     gsap.fromTo("#preflight-container", {opacity: 0, y: 10}, {opacity: 1, y:0, duration: 0.3, ease: "power2.out"});
+                    
+                    // Activate Steppers & Unlock Sections
+                    unlockStepSection('step-2-section', 'step-2-lock-overlay', 'step-badge-2', 'step-header-2', 'step-badge-header-2', 2);
+                    unlockStepSection('step-3-section', 'step-3-lock-overlay', 'step-badge-3', 'step-header-3', 'step-badge-header-3', 3);
+                    
                     calculateTotal();
 
                 }, function () {
@@ -968,6 +1049,29 @@
                 });
             };
             fileReader.readAsArrayBuffer(file);
+        }
+
+        // Stepper locks
+        window.triggerStepLockWarning = function(e) {
+            e.stopPropagation();
+            window.showAlert("Upload Required First", "Please complete Step 1 (Upload Your PDF) first so we can analyze pages and verify secure envelop spacing.", "error");
+        };
+
+        function unlockStepSection(sectionId, overlayId, badgeId, headerId, badgeHeaderId, num) {
+            const section = document.getElementById(sectionId);
+            const overlay = document.getElementById(overlayId);
+            const badge = document.getElementById(badgeId);
+            const header = document.getElementById(headerId);
+            const badgeHeader = document.getElementById(badgeHeaderId);
+
+            if (overlay) overlay.remove();
+            section.classList.remove('step-locked');
+            section.classList.add('step-active');
+            
+            badge.className = "w-6 h-6 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs transition-all duration-300 ring-4 ring-brand-100 animate-pulse";
+            header.className = "flex items-center gap-2 bg-slate-50 px-4 text-brand-800 font-bold transition-all duration-300";
+            
+            badgeHeader.className = "bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded transition-colors duration-300";
         }
 
         window.resetFile = function() {
@@ -981,12 +1085,36 @@
             document.getElementById('upload-error').classList.add('hidden');
             document.getElementById('preflight-container').classList.add('hidden');
             document.getElementById('submit-btn').innerHTML = '<span>Proceed to Payment</span> <i class="fa-solid fa-arrow-right text-xs"></i>';
+            
+            // Relock steppers
+            relockStepSection('step-2-section', 'step-2-lock-overlay', 'step-badge-2', 'step-header-2', 'step-badge-header-2', 2);
+            relockStepSection('step-3-section', 'step-3-lock-overlay', 'step-badge-3', 'step-header-3', 'step-badge-header-3', 3);
+
             calculateTotal();
+        }
+
+        function relockStepSection(sectionId, overlayId, badgeId, headerId, badgeHeaderId, num) {
+            const section = document.getElementById(sectionId);
+            if (!section.classList.contains('step-locked')) {
+                section.classList.add('step-locked');
+                section.classList.remove('step-active');
+
+                // Re-append overlay
+                const overlay = document.createElement('div');
+                overlay.id = overlayId;
+                overlay.className = "absolute inset-0 bg-white/20 backdrop-blur-[1px] rounded-xl z-20 cursor-not-allowed";
+                overlay.onclick = function(e) { window.triggerStepLockWarning(e); };
+                section.appendChild(overlay);
+
+                document.getElementById(badgeId).className = "w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-all duration-300";
+                document.getElementById(headerId).className = "flex items-center gap-2 bg-slate-50 px-4 transition-all duration-300 text-slate-400";
+                document.getElementById(badgeHeaderId).className = "bg-slate-200 text-slate-600 text-xs px-2 py-1 rounded transition-colors duration-300";
+            }
         }
 
         window.enforceEnvelopeRules = function(billablePages) {
             const warning = document.getElementById('envelope-warning');
-            if (billablePages > 6) {
+            if (billablePages > 10 && window.state.mailType === 'economy') {
                 warning.classList.remove('hidden');
             } else {
                 warning.classList.add('hidden');
@@ -994,8 +1122,8 @@
         }
 
         window.calculateTotal = function() {
-            window.state.printType = document.querySelector('input[name="printType"]:checked').value;
-            window.state.mailType = document.querySelector('input[name="mailType"]:checked').value;
+            window.state.printType = document.querySelector('input[name="printType"]:checked')?.value || 'bw';
+            window.state.mailType = document.querySelector('input[name="mailType"]:checked')?.value || 'economy';
 
             document.getElementById('date-economy').innerHTML = `Est. Arrival: ${getDeliveryDate(6)}`;
             document.getElementById('date-standard').innerHTML = `Est. Arrival: ${getDeliveryDate(4)}`;
@@ -1003,10 +1131,10 @@
 
             const printRate = window.state.printType === 'bw' ? window.PRICES.bw : window.PRICES.color;
             const uploadedPages = window.state.pageCount;
-            const billablePages = uploadedPages > 0 ? uploadedPages + 1 : 0;
+            const billablePages = uploadedPages; // No cover sheet addition
             
             let printCost = billablePages * printRate;
-            let overweightCost = billablePages > 6 ? window.PRICES.overweightFee : 0;
+            let overweightCost = (billablePages > 10 && window.state.mailType === 'economy') ? window.PRICES.overweightFee : 0;
             let largeOrderFee = billablePages > 100 ? window.PRICES.largeOrderFee : 0;
 
             if (overweightCost > 0) {
@@ -1026,7 +1154,7 @@
             const shippingCost = window.PRICES.shippingRates[window.state.mailType];
             const total = printCost + overweightCost + shippingCost + window.PRICES.serviceFee + largeOrderFee;
 
-            document.getElementById('summary-page-count').textContent = uploadedPages > 0 ? `${uploadedPages} + 1 cover page` : '0';
+            document.getElementById('summary-page-count').textContent = uploadedPages > 0 ? `${uploadedPages} pages` : '0';
             document.getElementById('summary-print-cost').textContent = formatMoney(printCost);
             document.getElementById('summary-shipping-cost').textContent = formatMoney(shippingCost);
             document.getElementById('summary-large-order-cost').textContent = formatMoney(largeOrderFee);
@@ -1034,6 +1162,10 @@
             
             document.getElementById('final-total').textContent = formatMoney(total);
             document.getElementById('mobile-total').textContent = formatMoney(total);
+            
+            // Dynamic mobile label description
+            const printTypeDesc = window.state.printType === 'bw' ? 'B&W' : 'Color';
+            document.getElementById('mobile-summary-lbl').textContent = `Checkout (${uploadedPages} Pages, ${printTypeDesc})`;
 
             const submitBtn = document.getElementById('submit-btn');
             if (uploadedPages > 0 && window.state.file) {
@@ -1050,6 +1182,132 @@
 
             enforceEnvelopeRules(billablePages);
         }
+
+        // Live USPS Shipping Cut-Off Window CountDown
+        function updateCutoffCountdown() {
+            const now = new Date();
+            // Target EST time check
+            const estString = now.toLocaleString("en-US", { timeZone: "America/New_York" });
+            const estDate = new Date(estString);
+            
+            let targetEst = new Date(estDate);
+            targetEst.setHours(14, 0, 0, 0); // 2:00 PM EST
+
+            if (estDate >= targetEst) {
+                // Past 2pm EST, ship tomorrow morning
+                targetEst.setDate(targetEst.getDate() + 1);
+            }
+            
+            // Exclude Saturday/Sunday schedules
+            while (targetEst.getDay() === 0 || targetEst.getDay() === 6) {
+                targetEst.setDate(targetEst.getDate() + 1);
+            }
+
+            const diffMs = targetEst - estDate;
+            const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+            const tickerEl = document.getElementById('countdown-ticker');
+            if (tickerEl) {
+                tickerEl.innerHTML = `Order in the next <span class="text-brand-800 font-bold underline">${diffHrs}h ${diffMins}m ${diffSecs}s</span> to ship TODAY.`;
+            }
+        }
+        setInterval(updateCutoffCountdown, 1000);
+        updateCutoffCountdown();
+
+        // ZIP to State Validation logic
+        function checkZipStateMatch(stateVal, zipVal, warningId) {
+            const warningEl = document.getElementById(warningId);
+            if (!stateVal || !zipVal) {
+                warningEl.classList.add('hidden');
+                return true;
+            }
+            
+            const cleanState = stateVal.toUpperCase().trim();
+            const cleanZipPrefix = zipVal.trim().substring(0, 2);
+
+            if (stateZipPrefixMap[cleanState]) {
+                const allowedPrefixes = stateZipPrefixMap[cleanState];
+                const matched = allowedPrefixes.some(prefix => zipVal.startsWith(prefix));
+                if (!matched) {
+                    warningEl.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-1"></i> Double check your ZIP Code. ${zipVal} is typically associated with another territory outside ${cleanState}.`;
+                    warningEl.classList.remove('hidden');
+                    return false;
+                }
+            }
+            warningEl.classList.add('hidden');
+            return true;
+        }
+
+        // Setup live state & zip validation listeners
+        const senderStateInput = document.querySelector('input[name="senderState"]');
+        const senderZipInput = document.querySelector('input[name="senderZip"]');
+        if (senderStateInput && senderZipInput) {
+            [senderStateInput, senderZipInput].forEach(inp => inp.addEventListener('input', () => {
+                checkZipStateMatch(senderStateInput.value, senderZipInput.value, 'sender-zip-warning');
+            }));
+        }
+
+        const recipientStateInput = document.querySelector('input[name="recipientState"]');
+        const recipientZipInput = document.querySelector('input[name="recipientZip"]');
+        if (recipientStateInput && recipientZipInput) {
+            [recipientStateInput, recipientZipInput].forEach(inp => inp.addEventListener('input', () => {
+                checkZipStateMatch(recipientStateInput.value, recipientZipInput.value, 'recipient-zip-warning');
+            }));
+        }
+
+        // Mock Autocomplete Interface Bindings
+        function setupAutocomplete(streetInputId, suggestionsId, cityId, stateId, zipId) {
+            const input = document.getElementById(streetInputId);
+            const suggestions = document.getElementById(suggestionsId);
+
+            input.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase();
+                suggestions.innerHTML = '';
+                if (!val) {
+                    suggestions.classList.add('hidden');
+                    return;
+                }
+
+                const matches = mockUSAddresses.filter(addr => addr.street.toLowerCase().includes(val));
+                if (matches.length === 0) {
+                    suggestions.classList.add('hidden');
+                    return;
+                }
+
+                suggestions.classList.remove('hidden');
+                matches.forEach(match => {
+                    const div = document.createElement('div');
+                    div.className = "p-3 hover:bg-slate-100 cursor-pointer text-sm border-b border-slate-100 last:border-b-0";
+                    div.innerHTML = `<i class="fa-solid fa-location-dot text-brand-800 mr-2"></i><strong>${match.street}</strong>, ${match.city}, ${match.state} ${match.zip}`;
+                    div.addEventListener('click', () => {
+                        input.value = match.street;
+                        document.getElementById(cityId).value = match.city;
+                        document.getElementById(stateId).value = match.state;
+                        document.getElementById(zipId).value = match.zip;
+                        suggestions.classList.add('hidden');
+                        
+                        // Fire validations immediately
+                        if (streetInputId.includes('sender')) {
+                            checkZipStateMatch(match.state, match.zip, 'sender-zip-warning');
+                        } else {
+                            checkZipStateMatch(match.state, match.zip, 'recipient-zip-warning');
+                        }
+                    });
+                    suggestions.appendChild(div);
+                });
+            });
+
+            // Close suggestions on external click click
+            document.addEventListener('click', (e) => {
+                if (e.target !== input) suggestions.classList.add('hidden');
+            });
+        }
+
+        // Initialize address lookup configurations
+        setupAutocomplete('senderStreet', 'sender-suggestions', 'senderCity', 'senderState', 'senderZip');
+        setupAutocomplete('recipientStreet', 'recipient-suggestions', 'recipientCity', 'recipientState', 'recipientZip');
 
         window.handleFormSubmit = async function(e) {
             e.preventDefault();
