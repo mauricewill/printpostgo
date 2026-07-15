@@ -30,10 +30,12 @@
     <!-- PDF.js for Page Counting & Rendering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        // Set worker globally immediately
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     
+    <!-- jsPDF Library for Dynamic Document Synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <!-- GSAP for Fluid Animations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
@@ -46,6 +48,7 @@
                         brand: {
                             50: '#eff6ff',
                             100: '#dbeafe',
+                            200: '#bfdbfe',
                             600: '#2563eb',
                             700: '#1d4ed8',
                             800: '#1e40af', // Primary Navy Blue
@@ -84,6 +87,25 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         #pdf-preview { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+
+        /* Document Watermark Layout Styles for Editor Paper Sheet */
+        .preview-paper-sheet {
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+            width: 100%;
+            max-width: 595px; /* Proportional letter width */
+            min-height: 770px; /* Proportional letter height */
+            padding: 3rem;
+            position: relative;
+            line-height: 1.6;
+            color: #1e293b;
+            font-size: 0.9rem;
+        }
+
+        /* Seamless layout dynamic visibility hooks */
+        .spa-page { display: none; }
+        .spa-page.active { display: block; }
     </style>
 </head>
 <body class="text-slate-800 bg-white pb-24 md:pb-0">
@@ -92,19 +114,26 @@
     <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 transition-all duration-300" id="navbar">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
-                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
+                <!-- Branding Logo -->
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="navigateTo('home')">
                     <div class="w-8 h-8 bg-brand-800 rounded flex items-center justify-center text-white">
                         <i class="fa-solid fa-paper-plane text-sm"></i>
                     </div>
                     <span class="font-header font-bold text-xl tracking-tight text-slate-900">PrintPostGo</span>
                 </div>
-                <div class="hidden md:flex space-x-8">
-                    <a href="#how-it-works" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">How It Works</a>
-                    <a href="#pricing" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">Pricing</a>
-                    <a href="#start-order" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">Order Now</a>
+                <!-- Dynamic Navigation Links -->
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#" onclick="navigateTo('home'); return false;" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">Home</a>
+                    <a href="#how-it-works" onclick="navigateTo('home')" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">How It Works</a>
+                    <!-- Subtle SEO Integration Anchor Link -->
+                    <a href="#" onclick="navigateTo('templates'); return false;" class="relative text-slate-600 hover:text-brand-800 font-medium transition-colors flex items-center gap-1.5">
+                        <span>Letter Templates</span>
+                        <span class="bg-brand-100 text-brand-800 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider scale-90">Free</span>
+                    </a>
+                    <a href="#pricing" onclick="navigateTo('home')" class="text-slate-600 hover:text-brand-800 font-medium transition-colors">Pricing</a>
                 </div>
                 <div class="flex items-center gap-4">
-                    <a href="#start-order" class="bg-brand-800 hover:bg-brand-900 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-brand-800/20 text-sm">
+                    <a href="#start-order" onclick="navigateTo('home')" class="bg-brand-800 hover:bg-brand-900 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-brand-800/20 text-sm">
                         Upload File to Start
                     </a>
                 </div>
@@ -112,595 +141,769 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-24 overflow-hidden">
-        <div class="absolute inset-0 hero-pattern z-0"></div>
-        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 text-brand-800 text-xs font-semibold mb-6 border border-brand-100">
-                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                No sign-up required. Send mail in under 60 seconds.
-            </div>
-            <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-6 leading-[1.1]">
-                Send physical letters<br>from your desk in <span class="text-brand-800">60 seconds.</span>
-            </h1>
-            <p class="mt-4 text-xl text-slate-600 max-w-2xl mx-auto font-light leading-relaxed">
-                No printer. No stamps. No trips to the Post Office. Upload your PDF, enter standard address details, and we'll securely print, stuff, and mail it for you.
-            </p>
+    <!-- SPA VIEW 1: LANDING PAGE -->
+    <div id="page-home" class="spa-page active">
+        <!-- Hero Section -->
+        <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-24 overflow-hidden">
+            <div class="absolute inset-0 hero-pattern z-0"></div>
+            <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 text-brand-800 text-xs font-semibold mb-6 border border-brand-100">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    No sign-up required. Send mail in under 60 seconds.
+                </div>
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-6 leading-[1.1]">
+                    Send physical letters<br>from your desk in <span class="text-brand-800">60 seconds.</span>
+                </h1>
+                <p class="mt-4 text-xl text-slate-600 max-w-2xl mx-auto font-light leading-relaxed">
+                    No printer. No stamps. No trips to the Post Office. Upload your PDF, enter standard address details, and we'll securely print, stuff, and mail it for you.
+                </p>
 
-            <!-- Dynamic Mail Delivery Ticker -->
-            <div class="mt-6 inline-flex items-center gap-2 bg-slate-900 text-white text-xs px-4 py-2 rounded-full shadow-lg font-medium">
-                <i class="fa-solid fa-truck-fast text-green-400"></i>
-                <span id="countdown-ticker">Calculating today's cutoff...</span>
-            </div>
-
-            <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#start-order" class="bg-brand-800 hover:bg-brand-900 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-brand-800/20 flex items-center justify-center gap-2 transform hover:-translate-y-1">
-                    Upload File to Start <i class="fa-solid fa-arrow-right text-sm"></i>
-                </a>
-                <a href="#pricing" class="bg-white border border-slate-200 hover:border-brand-300 hover:bg-slate-50 text-slate-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all flex items-center justify-center">
-                    See Pricing
-                </a>
-            </div>
-            
-            <!-- Trust Indicators -->
-            <div class="mt-12 flex items-center justify-center gap-6 md:gap-12 grayscale opacity-60">
-                <div class="flex items-center gap-2"><i class="fa-solid fa-lock text-brand-800"></i><span class="font-bold text-sm">Confidential & Secure</span></div>
-                <div class="flex items-center gap-2"><i class="fa-solid fa-building-columns text-brand-800"></i><span class="font-bold text-sm">Professional Quality</span></div>
-                <div class="flex items-center gap-2"><i class="fa-brands fa-stripe text-brand-800"></i><span class="font-bold text-sm">Stripe Payments</span></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Use Cases Section -->
-    <section class="py-16 bg-white border-b border-slate-100" id="how-it-works">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10">
-                <span class="text-brand-800 font-semibold text-sm tracking-wide uppercase">Why Use PrintPostGo</span>
-            </div>
-            <div class="grid md:grid-cols-3 gap-8 text-center">
-                <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors spotlight-group">
-                    <div class="relative z-10">
-                        <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-scale-balanced"></i>
-                        </div>
-                        <h3 class="font-bold text-xl text-slate-900 mb-3">Legal & Professional</h3>
-                        <p class="text-slate-600 text-sm">Send certified notices, contracts, and important documents with strict confidentiality. No more manual collation.</p>
-                    </div>
-                </div>
-                <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors spotlight-group">
-                    <div class="relative z-10">
-                        <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-file-invoice-dollar"></i>
-                        </div>
-                        <h3 class="font-bold text-xl text-slate-900 mb-3">Small Business</h3>
-                        <p class="text-slate-600 text-sm">Accelerate accounts receivable. Send invoices and monthly statements to clients without buying stamps or envelopes.</p>
-                    </div>
-                </div>
-                <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors spotlight-group">
-                    <div class="relative z-10">
-                        <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-house-user"></i>
-                        </div>
-                        <h3 class="font-bold text-xl text-slate-900 mb-3">Personal & Home Office</h3>
-                        <p class="text-slate-600 text-sm">Skip the trip to the post office. Easily mail tax forms, letters, or administrative documents from the comfort of home.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Testimonials Section -->
-    <section class="py-20 bg-slate-50 border-b border-slate-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">Trusted by Professionals</h2>
-                <p class="text-slate-600">Join thousands of businesses and individuals who have switched to digital mailing.</p>
-            </div>
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- Review 1 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 spotlight-group">
-                    <div class="relative z-10">
-                        <div class="flex text-yellow-400 mb-4 text-sm">
-                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                        </div>
-                        <p class="text-slate-600 mb-6 italic text-sm">"I used to spend Friday afternoons stuffing envelopes for invoices. Now I just upload a PDF and I'm done in 2 minutes. Game changer."</p>
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 text-brand-800 flex items-center justify-center font-bold text-xs">SJ</div>
-                            <div>
-                                <p class="font-bold text-slate-900 text-sm">Sarah Jenkins</p>
-                                <p class="text-xs text-slate-500">Freelance Accountant</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Review 2 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 spotlight-group">
-                    <div class="relative z-10">
-                        <div class="flex text-yellow-400 mb-4 text-sm">
-                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                        </div>
-                        <p class="text-slate-600 mb-6 italic text-sm">"Needed to send an important notice but couldn't get to the post office before work. PrintPostGo handled it perfectly — uploaded and done in minutes."</p>
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 text-brand-800 flex items-center justify-center font-bold text-xs">MR</div>
-                            <div>
-                                <p class="font-bold text-slate-900 text-sm">Michael Ross</p>
-                                <p class="text-xs text-slate-500">Property Manager</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Review 3 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 spotlight-group">
-                    <div class="relative z-10">
-                        <div class="flex text-yellow-400 mb-4 text-sm">
-                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                        </div>
-                        <p class="text-slate-600 mb-6 italic text-sm">"The interface is incredibly simple. I was skeptical about the privacy at first, but the security measures are transparent and solid."</p>
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 text-brand-800 flex items-center justify-center font-bold text-xs">DT</div>
-                            <div>
-                                <p class="font-bold text-slate-900 text-sm">David Thompson</p>
-                                <p class="text-xs text-slate-500">Real Estate Agent</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing Grid -->
-    <section id="pricing" class="py-24 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h2>
-                <p class="text-slate-600">Pay as you go. No subscriptions. Return and recipient address printed directly on envelopes.</p>
-            </div>
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
-                <div>
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100">
-                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm">
-                                <i class="fa-solid fa-print"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-900">Printing Costs</h4>
-                                <p class="text-sm text-slate-500">B&W: $0.30/page | Color: $0.85/page</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100">
-                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm">
-                                <i class="fa-solid fa-envelope"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-900">Mailing Options</h4>
-                                <p class="text-sm text-slate-500">Economy ($4.00) | Priority + Tracking ($17.00) | Certified ($21.00)</p>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Dynamic Mail Delivery Ticker -->
+                <div class="mt-6 inline-flex items-center gap-2 bg-slate-900 text-white text-xs px-4 py-2 rounded-full shadow-lg font-medium">
+                    <i class="fa-solid fa-truck-fast text-green-400"></i>
+                    <span id="countdown-ticker">Calculating today's cutoff...</span>
                 </div>
 
-                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg">
-                    <h3 class="font-header font-bold text-xl mb-6">Quick Estimator</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - Economy</span>
-                            <span class="font-bold text-slate-900">$5.80</span>
-                        </div>
-                        <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">5 Uploaded Pages (B&W) - Economy</span>
-                            <span class="font-bold text-slate-900">$7.00</span>
-                        </div>
-                        <div class="flex justify-between items-center py-3 border-b border-slate-100">
-                            <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - Priority + Tracking</span>
-                            <span class="font-bold text-slate-900">$18.80</span>
-                        </div>
-                        <div class="flex justify-between items-center py-3">
-                            <span class="text-slate-600 text-sm">5 Uploaded Pages (Color) - Certified</span>
-                            <span class="font-bold text-slate-900 font-header text-slate-900">$26.75</span>
-                        </div>
-                    </div>
+                <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#start-order" class="bg-brand-800 hover:bg-brand-900 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-brand-800/20 flex items-center justify-center gap-2 transform hover:-translate-y-1">
+                        Upload File to Start <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </a>
+                    <!-- Direct Dynamic Navigation To templates -->
+                    <button onclick="navigateTo('templates')" class="bg-white border border-slate-200 hover:border-brand-300 hover:bg-slate-50 text-slate-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-2">
+                        Browse Free Templates <i class="fa-solid fa-file-invoice text-brand-600 text-sm"></i>
+                    </button>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Main Order Form Section -->
-    <section id="start-order" class="py-24 bg-slate-50">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <!-- Progress Stepper -->
-            <div class="flex justify-between items-center max-w-2xl mx-auto mb-12 text-sm font-medium text-slate-400 relative">
-                <div class="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -z-10"></div>
                 
-                <!-- Step 1 -->
-                <div id="step-1-indicator" class="flex items-center gap-2 bg-slate-50 pr-4 text-brand-800 transition-colors duration-300">
-                    <span id="step-1-bubble" class="w-6 h-6 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-brand-800/10">1</span> Upload
-                </div>
-                <!-- Step 2 -->
-                <div id="step-2-indicator" class="flex items-center gap-2 bg-slate-50 px-4 transition-colors duration-300">
-                    <span id="step-2-bubble" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">2</span> Address
-                </div>
-                <!-- Step 3 -->
-                <div id="step-3-indicator" class="flex items-center gap-2 bg-slate-50 pl-4 transition-colors duration-300">
-                    <span id="step-3-bubble" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">3</span> Options
+                <!-- Trust Indicators -->
+                <div class="mt-12 flex items-center justify-center gap-6 md:gap-12 grayscale opacity-60">
+                    <div class="flex items-center gap-2"><i class="fa-solid fa-lock text-brand-800"></i><span class="font-bold text-sm">Confidential & Secure</span></div>
+                    <div class="flex items-center gap-2"><i class="fa-solid fa-building-columns text-brand-800"></i><span class="font-bold text-sm">Professional Quality</span></div>
+                    <div class="flex items-center gap-2"><i class="fa-brands fa-stripe text-brand-800"></i><span class="font-bold text-sm">Stripe Payments</span></div>
                 </div>
             </div>
+        </section>
 
-            <div class="text-center mb-12">
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Configure Your Order</h2>
-                <p class="text-slate-600 mt-2">Upload your document first to unlock live postage verification and step parameters.</p>
+        <!-- Use Cases Section -->
+        <section class="py-16 bg-white border-b border-slate-100" id="how-it-works">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <span class="text-brand-800 font-semibold text-sm tracking-wide uppercase">Why Use PrintPostGo</span>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8 text-center">
+                    <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors spotlight-group">
+                        <div class="relative z-10">
+                            <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-scale-balanced"></i>
+                            </div>
+                            <h3 class="font-bold text-xl text-slate-900 mb-3">Legal & Professional</h3>
+                            <p class="text-slate-600 text-sm">Send certified notices, contracts, and important documents with strict confidentiality. No more manual collation.</p>
+                        </div>
+                    </div>
+                    <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors spotlight-group">
+                        <div class="relative z-10">
+                            <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <h3 class="font-bold text-xl text-slate-900 mb-3">Small Business</h3>
+                            <p class="text-slate-600 text-sm">Accelerate accounts receivable. Send invoices and monthly statements to clients without buying stamps or envelopes.</p>
+                        </div>
+                    </div>
+                    <div class="p-6 group hover:bg-slate-50 rounded-2xl transition-colors spotlight-group">
+                        <div class="relative z-10">
+                            <div class="w-14 h-14 bg-blue-50 text-brand-800 rounded-xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-house-user"></i>
+                            </div>
+                            <h3 class="font-bold text-xl text-slate-900 mb-3">Personal & Home Office</h3>
+                            <p class="text-slate-600 text-sm">Skip the trip to the post office. Easily mail tax forms, letters, or administrative documents from the comfort of home.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </section>
 
-            <!-- Form Container -->
-            <form id="orderForm" class="grid lg:grid-cols-3 gap-8" onsubmit="handleFormSubmit(event)">
-                
-                <!-- Left Column: Inputs -->
-                <div class="lg:col-span-2 space-y-8">
-                    
-                    <!-- 1. Document Upload -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 relative">
-                        <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
-                            <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 1</span> Upload Document
-                        </h3>
-                        
-                        <!-- Clickable / Drag-and-Drop Zone -->
-                        <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:bg-slate-50/50 hover:border-brand-600 transition-colors cursor-pointer relative bg-slate-50/50">
-                            <!-- Raw fallback input inside a simple wrapper block to isolate from click propagation conflicts -->
-                            <input type="file" id="file-upload" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="application/pdf" onchange="window.handleFileSelect(this)">
-                            
-                            <!-- Prompt State -->
-                            <div id="upload-prompt" class="relative z-10 pointer-events-none">
-                                <div class="w-12 h-12 bg-blue-100 text-brand-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+        <!-- Testimonials Section -->
+        <section class="py-20 bg-slate-50 border-b border-slate-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-4">Trusted by Professionals</h2>
+                    <p class="text-slate-600">Join thousands of businesses and individuals who have switched to digital mailing.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Review 1 -->
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 spotlight-group">
+                        <div class="relative z-10">
+                            <div class="flex text-yellow-400 mb-4 text-sm">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="text-slate-600 mb-6 italic text-sm">"I used to spend Friday afternoons stuffing envelopes for invoices. Now I just upload a PDF and I'm done in 2 minutes. Game changer."</p>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-brand-800 flex items-center justify-center font-bold text-xs">SJ</div>
+                                <div>
+                                    <p class="font-bold text-slate-900 text-sm">Sarah Jenkins</p>
+                                    <p class="text-xs text-slate-500">Freelance Accountant</p>
                                 </div>
-                                <p class="text-sm font-medium text-slate-900">Click or drag PDF to upload</p>
-                                <p class="text-xs text-slate-500 mt-1">PDF file matrix only. Max size 25MB.</p>
                             </div>
+                        </div>
+                    </div>
+                    <!-- Review 2 -->
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 spotlight-group">
+                        <div class="relative z-10">
+                            <div class="flex text-yellow-400 mb-4 text-sm">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="text-slate-600 mb-6 italic text-sm">"Needed to send an important notice but couldn't get to the post office before work. PrintPostGo handled it perfectly — uploaded and done in minutes."</p>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-brand-800 flex items-center justify-center font-bold text-xs">MR</div>
+                                <div>
+                                    <p class="font-bold text-slate-900 text-sm">Michael Ross</p>
+                                    <p class="text-xs text-slate-500">Property Manager</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Review 3 -->
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 spotlight-group">
+                        <div class="relative z-10">
+                            <div class="flex text-yellow-400 mb-4 text-sm">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="text-slate-600 mb-6 italic text-sm">"The interface is incredibly simple. I was skeptical about the privacy at first, but the security measures are transparent and solid."</p>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-brand-800 flex items-center justify-center font-bold text-xs">DT</div>
+                                <div>
+                                    <p class="font-bold text-slate-900 text-sm">David Thompson</p>
+                                    <p class="text-xs text-slate-500">Real Estate Agent</p>
+                                }</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-                            <!-- Success/Preview State -->
-                            <div id="file-info" class="hidden relative z-30">
-                                <div class="flex flex-col items-center">
-                                    <canvas id="pdf-preview" class="mb-4 border border-slate-200 rounded shadow-sm max-h-48 w-auto bg-white"></canvas>
-                                    <div class="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold mb-2">
-                                        <i class="fa-solid fa-check"></i> <span id="page-count-display">0 Pages detected</span>
+        <!-- Pricing Grid -->
+        <section id="pricing" class="py-24 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h2>
+                    <p class="text-slate-600">Pay as you go. No subscriptions. Return and recipient address printed directly on envelopes.</p>
+                </div>
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100">
+                                <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm">
+                                    <i class="fa-solid fa-print"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900">Printing Costs</h4>
+                                    <p class="text-sm text-slate-500">B&W: $0.30/page | Color: $0.85/page</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100">
+                                <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-800 shadow-sm">
+                                    <i class="fa-solid fa-envelope"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900">Mailing Options</h4>
+                                    <p class="text-sm text-slate-500">Economy ($4.00) | Priority + Tracking ($17.00) | Certified ($21.00)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg">
+                        <h3 class="font-header font-bold text-xl mb-6">Quick Estimator</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - Economy</span>
+                                <span class="font-bold text-slate-900">$5.80</span>
+                            </div>
+                            <div class="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span class="text-slate-600 text-sm">5 Uploaded Pages (B&W) - Economy</span>
+                                <span class="font-bold text-slate-900">$7.00</span>
+                            </div>
+                            <div class="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span class="text-slate-600 text-sm">1 Uploaded Page (B&W) - Priority + Tracking</span>
+                                <span class="font-bold text-slate-900">$18.80</span>
+                            </div>
+                            <div class="flex justify-between items-center py-3">
+                                <span class="text-slate-600 text-sm">5 Uploaded Pages (Color) - Certified</span>
+                                <span class="font-bold text-slate-900 font-header text-slate-900">$26.75</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Order Form Section -->
+        <section id="start-order" class="py-24 bg-slate-50">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <!-- Progress Stepper -->
+                <div class="flex justify-between items-center max-w-2xl mx-auto mb-12 text-sm font-medium text-slate-400 relative">
+                    <div class="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -z-10"></div>
+                    
+                    <!-- Step 1 -->
+                    <div id="step-1-indicator" class="flex items-center gap-2 bg-slate-50 pr-4 text-brand-800 transition-colors duration-300">
+                        <span id="step-1-bubble" class="w-6 h-6 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-brand-800/10">1</span> Upload
+                    </div>
+                    <!-- Step 2 -->
+                    <div id="step-2-indicator" class="flex items-center gap-2 bg-slate-50 px-4 transition-colors duration-300">
+                        <span id="step-2-bubble" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">2</span> Address
+                    </div>
+                    <!-- Step 3 -->
+                    <div id="step-3-indicator" class="flex items-center gap-2 bg-slate-50 pl-4 transition-colors duration-300">
+                        <span id="step-3-bubble" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">3</span> Options
+                    </div>
+                </div>
+
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Configure Your Order</h2>
+                    <p class="text-slate-600 mt-2">Upload your document first to unlock live postage verification and step parameters.</p>
+                </div>
+
+                <!-- Form Container -->
+                <form id="orderForm" class="grid lg:grid-cols-3 gap-8" onsubmit="handleFormSubmit(event)">
+                    
+                    <!-- Left Column: Inputs -->
+                    <div class="lg:col-span-2 space-y-8">
+                        
+                        <!-- 1. Document Upload -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 relative">
+                            <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
+                                <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 1</span> Upload Document
+                            </h3>
+                            
+                            <!-- Clickable / Drag-and-Drop Zone -->
+                            <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:bg-slate-50/50 hover:border-brand-600 transition-colors cursor-pointer relative bg-slate-50/50">
+                                <!-- Raw fallback input -->
+                                <input type="file" id="file-upload" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="application/pdf" onchange="window.handleFileSelect(this)">
+                                
+                                <!-- Prompt State -->
+                                <div id="upload-prompt" class="relative z-10 pointer-events-none">
+                                    <div class="w-12 h-12 bg-blue-100 text-brand-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
                                     </div>
-                                    <p id="filename-display" class="text-sm font-medium text-slate-900 truncate max-w-xs"></p>
-                                    
-                                    <!-- Pre-flight Suite Panel -->
-                                    <div id="preflight-container" class="mt-4 w-full border border-slate-100 rounded-xl bg-slate-50/50 p-4 text-left hidden">
-                                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                            <i class="fa-solid fa-gauge-high text-brand-800"></i> Pre-flight Quality Scan
-                                        </h4>
-                                        <div class="space-y-3 text-xs">
-                                            <!-- Dimensions -->
-                                            <div id="pf-dimensions" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
-                                                <div class="flex items-start gap-2">
-                                                    <span id="pf-dimensions-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
-                                                    <div>
-                                                        <p class="font-semibold text-slate-800">Page Dimensions</p>
-                                                        <p id="pf-dimensions-text" class="text-slate-500">Checking layout size...</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Fonts Check -->
-                                            <div id="pf-fonts" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
-                                                <div class="flex items-start gap-2">
-                                                    <span id="pf-fonts-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
-                                                    <div>
-                                                        <p class="font-semibold text-slate-800">Font Embeddings</p>
-                                                        <p id="pf-fonts-text" class="text-slate-500">Checking PDF typography dictionaries...</p>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    <p class="text-sm font-medium text-slate-900">Click or drag PDF to upload</p>
+                                    <p class="text-xs text-slate-500 mt-1">PDF file matrix only. Max size 25MB.</p>
+                                </div>
 
-                                            <!-- Annotations/Interactive Form Check -->
-                                            <div id="pf-interactive" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
-                                                <div class="flex items-start gap-2">
-                                                    <span id="pf-interactive-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
-                                                    <div>
-                                                        <p class="font-semibold text-slate-800">Interactive Forms</p>
-                                                        <p id="pf-interactive-text" class="text-slate-500">Checking for dynamic fields...</p>
+                                <!-- Success/Preview State -->
+                                <div id="file-info" class="hidden relative z-30">
+                                    <div class="flex flex-col items-center">
+                                        <canvas id="pdf-preview" class="mb-4 border border-slate-200 rounded shadow-sm max-h-48 w-auto bg-white"></canvas>
+                                        <div class="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold mb-2">
+                                            <i class="fa-solid fa-check"></i> <span id="page-count-display">0 Pages detected</span>
+                                        </div>
+                                        <p id="filename-display" class="text-sm font-medium text-slate-900 truncate max-w-xs"></p>
+                                        
+                                        <!-- Pre-flight Suite Panel -->
+                                        <div id="preflight-container" class="mt-4 w-full border border-slate-100 rounded-xl bg-slate-50/50 p-4 text-left hidden">
+                                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-gauge-high text-brand-800"></i> Pre-flight Quality Scan
+                                            </h4>
+                                            <div class="space-y-3 text-xs">
+                                                <!-- Dimensions -->
+                                                <div id="pf-dimensions" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
+                                                    <div class="flex items-start gap-2">
+                                                        <span id="pf-dimensions-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
+                                                        <div>
+                                                            <p class="font-semibold text-slate-800">Page Dimensions</p>
+                                                            <p id="pf-dimensions-text" class="text-slate-500">Checking layout size...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Fonts Check -->
+                                                <div id="pf-fonts" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
+                                                    <div class="flex items-start gap-2">
+                                                        <span id="pf-fonts-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
+                                                        <div>
+                                                            <p class="font-semibold text-slate-800">Font Embeddings</p>
+                                                            <p id="pf-fonts-text" class="text-slate-500">Checking PDF typography dictionaries...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Annotations/Interactive Form Check -->
+                                                <div id="pf-interactive" class="flex items-start justify-between p-2.5 bg-white rounded-lg border border-slate-100">
+                                                    <div class="flex items-start gap-2">
+                                                        <span id="pf-interactive-icon" class="mt-0.5"><i class="fa-solid fa-circle-notch animate-spin text-slate-400"></i></span>
+                                                        <div>
+                                                            <p class="font-semibold text-slate-800">Interactive Forms</p>
+                                                            <p id="pf-interactive-text" class="text-slate-500">Checking for dynamic fields...</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <!-- Large Order Warning -->
+                                        <p id="large-order-warning" class="hidden text-xs text-amber-600 font-bold mt-2 bg-amber-50 px-3 py-1 rounded border border-amber-200">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> Orders over 100 pages incur a $5.00 processing fee.
+                                        </p>
+
+                                        <button type="button" class="text-xs text-red-500 underline mt-4 hover:text-red-600 relative z-40" onclick="window.resetFile(event)">Remove & Upload Different File</button>
                                     </div>
-
-                                    <!-- Large Order Warning -->
-                                    <p id="large-order-warning" class="hidden text-xs text-amber-600 font-bold mt-2 bg-amber-50 px-3 py-1 rounded border border-amber-200">
-                                        <i class="fa-solid fa-triangle-exclamation"></i> Orders over 100 pages incur a $5.00 processing fee.
-                                    </p>
-
-                                    <button type="button" class="text-xs text-red-500 underline mt-4 hover:text-red-600 relative z-40" onclick="window.resetFile(event)">Remove & Upload Different File</button>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Security Micro-copy -->
-                        <div class="mt-3 flex items-center justify-between px-2">
-                            <div class="flex items-center gap-1 text-[10px] text-slate-400">
-                                <i class="fa-solid fa-shield-halved"></i>
-                                Files are 256-bit encrypted and auto-deleted after 7 days.
+                            
+                            <!-- Security Micro-copy -->
+                            <div class="mt-3 flex items-center justify-between px-2">
+                                <div class="flex items-center gap-1 text-[10px] text-slate-400">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                    Files are 256-bit encrypted and auto-deleted after 7 days.
+                                </div>
+                                <div class="flex gap-2 opacity-50 grayscale hover:opacity-80 transition-opacity">
+                                    <span class="text-[9px] font-bold border border-slate-300 px-1.5 py-0.5 rounded text-slate-500">AES-256</span>
+                                    <span class="text-[9px] font-bold border border-slate-300 px-1.5 py-0.5 rounded text-slate-500">HIPAA SECURE</span>
+                                    <span class="text-[9px] font-bold border border-slate-300 px-1.5 py-0.5 rounded text-slate-500">SOC2 COMPLIANT</span>
+                                </div>
                             </div>
-                            <div class="flex gap-2 opacity-50 grayscale hover:opacity-80 transition-opacity">
-                                <span class="text-[9px] font-bold border border-slate-300 px-1.5 py-0.5 rounded text-slate-500">AES-256</span>
-                                <span class="text-[9px] font-bold border border-slate-300 px-1.5 py-0.5 rounded text-slate-500">HIPAA SECURE</span>
-                                <span class="text-[9px] font-bold border border-slate-300 px-1.5 py-0.5 rounded text-slate-500">SOC2 COMPLIANT</span>
-                            </div>
-                        </div>
-                        
-                        <p id="upload-error" class="text-red-600 text-xs mt-2 hidden text-center"><i class="fa-solid fa-circle-exclamation"></i> Please upload a valid PDF file.</p>
-                    </div>
-
-                    <!-- 2. Address & Step 2 Wrapper (Initially Faded) -->
-                    <div id="step-2-section" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 transition-all duration-300 opacity-50 pointer-events-none relative">
-                        <!-- Step 2 Guard Block Overlay -->
-                        <div id="step-2-guard" class="absolute inset-0 bg-slate-50/10 z-30 rounded-xl cursor-not-allowed flex flex-col items-center justify-center p-4 text-center">
-                            <div class="bg-slate-900/90 text-white p-3 rounded-lg text-xs max-w-xs shadow-xl flex items-center gap-2">
-                                <i class="fa-solid fa-lock text-brand-100"></i>
-                                <span>Please complete Step 1 (Upload File) to start addressing.</span>
-                            </div>
+                            
+                            <p id="upload-error" class="text-red-600 text-xs mt-2 hidden text-center"><i class="fa-solid fa-circle-exclamation"></i> Please upload a valid PDF file.</p>
                         </div>
 
-                        <h3 class="font-header font-bold text-lg mb-6 flex items-center gap-2">
-                            <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 2</span> Addressing
-                        </h3>
-
-                        <!-- Envelope Address Standard Confirmation Check -->
-                        <div class="mb-6 p-4 border border-emerald-100 bg-emerald-50/40 rounded-xl flex items-start gap-3 text-xs text-emerald-800">
-                            <i class="fa-solid fa-circle-check text-lg text-emerald-600 mt-0.5"></i>
-                            <div>
-                                <p class="font-semibold">Automated Envelope Addressing Enabled (Free)</p>
-                                <p class="text-slate-600 mt-0.5">We print standard sender and recipient addresses directly on standard business envelopes. Your document files will remain clean and untouched.</p>
+                        <!-- 2. Address & Step 2 Wrapper (Initially Faded) -->
+                        <div id="step-2-section" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 transition-all duration-300 opacity-50 pointer-events-none relative">
+                            <!-- Step 2 Guard Block Overlay -->
+                            <div id="step-2-guard" class="absolute inset-0 bg-slate-50/10 z-30 rounded-xl cursor-not-allowed flex flex-col items-center justify-center p-4 text-center">
+                                <div class="bg-slate-900/90 text-white p-3 rounded-lg text-xs max-w-xs shadow-xl flex items-center gap-2">
+                                    <i class="fa-solid fa-lock text-brand-100"></i>
+                                    <span>Please complete Step 1 (Upload File) to start addressing.</span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <!-- Sender -->
-                            <div class="space-y-6 bg-slate-50 p-5 rounded-xl border border-slate-100">
-                                <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center gap-2">
-                                    <i class="fa-solid fa-user text-slate-400"></i> Sender (You)
-                                </h4>
+                            <h3 class="font-header font-bold text-lg mb-6 flex items-center gap-2">
+                                <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 2</span> Addressing
+                            </h3>
+
+                            <!-- Envelope Address Standard Confirmation Check -->
+                            <div class="mb-6 p-4 border border-emerald-100 bg-emerald-50/40 rounded-xl flex items-start gap-3 text-xs text-emerald-800">
+                                <i class="fa-solid fa-circle-check text-lg text-emerald-600 mt-0.5"></i>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name <span class="text-red-500">*</span></label>
-                                    <input type="text" id="senderName" name="senderName" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    <p class="font-semibold">Automated Envelope Addressing Enabled (Free)</p>
+                                    <p class="text-slate-600 mt-0.5">We print standard sender and recipient addresses directly on standard business envelopes. Your document files will remain clean and untouched.</p>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Email Address <span class="text-red-500">*</span></label>
-                                    <input type="email" id="senderEmail" name="senderEmail" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
-                                </div>
-                                <div class="relative">
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
-                                    <input type="text" id="senderStreet" name="senderStreet" required placeholder="123 Main St" onkeyup="handleAutocomplete(this, 'sender')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
-                                    <div id="sender-suggestions" class="absolute left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg mt-1 hidden shadow-lg text-xs overflow-hidden max-h-48 scroll-py-1"></div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
-                                    <input type="text" id="senderCity" name="senderCity" required placeholder="New York" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <!-- Sender -->
+                                <div class="space-y-6 bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                    <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center gap-2">
+                                        <i class="fa-solid fa-user text-slate-400"></i> Sender (You)
+                                    </h4>
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
-                                        <input type="text" id="senderState" name="senderState" required placeholder="NY" maxlength="2" onchange="validateZipCrossMatch('sender')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                                        <input type="text" id="senderName" name="senderName" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">Zip <span class="text-red-500">*</span></label>
-                                        <input type="text" id="senderZip" name="senderZip" required placeholder="10001" onchange="validateZipCrossMatch('sender')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Email Address <span class="text-red-500">*</span></label>
+                                        <input type="email" id="senderEmail" name="senderEmail" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                     </div>
-                                </div>
-                                <p id="sender-zip-warning" class="text-xs text-amber-600 font-medium hidden bg-amber-50 p-2 rounded border border-amber-200"></p>
-                            </div>
-
-                            <!-- Recipient -->
-                            <div class="space-y-6 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
-                                <h4 class="text-sm font-semibold text-brand-800 uppercase tracking-wider border-b border-blue-200 pb-2 flex items-center gap-2">
-                                    <i class="fa-solid fa-location-dot text-brand-600"></i> Recipient
-                                </h4>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Recipient Name <span class="text-red-500">*</span></label>
-                                    <input type="text" id="recipientName" name="recipientName" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
-                                </div>
-                                <div class="hidden md:block opacity-0 pointer-events-none select-none">
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Spacer</label>
-                                    <input type="text" class="w-full rounded-lg border-slate-300 px-4 py-3 border text-base" disabled>
-                                </div>
-                                <div class="relative">
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
-                                    <input type="text" id="recipientStreet" name="recipientStreet" required placeholder="456 Elm Ave" onkeyup="handleAutocomplete(this, 'recipient')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
-                                    <div id="recipient-suggestions" class="absolute left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg mt-1 hidden shadow-lg text-xs overflow-hidden max-h-48 scroll-py-1"></div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
-                                    <input type="text" id="recipientCity" name="recipientCity" required placeholder="Los Angeles" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
-                                        <input type="text" id="recipientState" name="recipientState" required placeholder="CA" maxlength="2" onchange="validateZipCrossMatch('recipient')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
+                                        <input type="text" id="senderStreet" name="senderStreet" required placeholder="123 Main St" onkeyup="handleAutocomplete(this, 'sender')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                        <div id="sender-suggestions" class="absolute left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg mt-1 hidden shadow-lg text-xs overflow-hidden max-h-48 scroll-py-1"></div>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">Zip <span class="text-red-500">*</span></label>
-                                        <input type="text" id="recipientZip" name="recipientZip" required placeholder="90001" onchange="validateZipCrossMatch('recipient')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
+                                        <input type="text" id="senderCity" name="senderCity" required placeholder="New York" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
                                     </div>
-                                </div>
-                                <p id="recipient-zip-warning" class="text-xs text-amber-600 font-medium hidden bg-amber-50 p-2 rounded border border-amber-200"></p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 3. Configuration & Step 3 Wrapper (Initially Faded) -->
-                    <div id="step-3-section" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 transition-all duration-300 opacity-50 pointer-events-none relative">
-                        <!-- Step 3 Guard Block Overlay -->
-                        <div id="step-3-guard" class="absolute inset-0 bg-slate-50/10 z-30 rounded-xl cursor-not-allowed"></div>
-
-                        <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
-                            <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 3</span> Print & Mail Options
-                        </h3>
-
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <!-- Print Settings -->
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-3">Print Color</label>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <label class="cursor-pointer relative">
-                                            <input type="radio" name="printType" value="bw" checked class="peer sr-only" onchange="window.calculateTotal()">
-                                            <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
-                                                <i class="fa-solid fa-file-lines mb-1 block"></i>
-                                                <span class="text-sm font-semibold">Black & White</span>
-                                                <span class="block text-xs text-slate-500">$0.30/page</span>
-                                            </div>
-                                        </label>
-                                        <label class="cursor-pointer relative">
-                                            <input type="radio" name="printType" value="color" class="peer sr-only" onchange="window.calculateTotal()">
-                                            <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
-                                                <i class="fa-solid fa-palette mb-1 block text-pink-500"></i>
-                                                <span class="text-sm font-semibold">Full Color</span>
-                                                <span class="block text-xs text-slate-500">$0.85/page</span>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Paper Size & Specifications</label>
-                                    <div class="flex items-center gap-3 p-3.5 border rounded-lg bg-slate-50 border-slate-200">
-                                        <div class="text-slate-500 bg-white border rounded p-1.5 flex items-center justify-center">
-                                            <i class="fa-solid fa-file-invoice text-lg text-slate-600"></i>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
+                                            <input type="text" id="senderState" name="senderState" required placeholder="NY" maxlength="2" onchange="validateZipCrossMatch('sender')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
                                         </div>
                                         <div>
-                                            <span class="text-sm font-semibold text-slate-900 block">Letter Size (8.5" x 11")</span>
-                                            <span class="block text-xs text-slate-500">Standard business-grade 20lb white paper</span>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">Zip <span class="text-red-500">*</span></label>
+                                            <input type="text" id="senderZip" name="senderZip" required placeholder="10001" onchange="validateZipCrossMatch('sender')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                        </div>
+                                    </div>
+                                    <p id="sender-zip-warning" class="text-xs text-amber-600 font-medium hidden bg-amber-50 p-2 rounded border border-amber-200"></p>
+                                </div>
+
+                                <!-- Recipient -->
+                                <div class="space-y-6 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
+                                    <h4 class="text-sm font-semibold text-brand-800 uppercase tracking-wider border-b border-blue-200 pb-2 flex items-center gap-2">
+                                        <i class="fa-solid fa-location-dot text-brand-600"></i> Recipient
+                                    </h4>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Recipient Name <span class="text-red-500">*</span></label>
+                                        <input type="text" id="recipientName" name="recipientName" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    </div>
+                                    <div class="hidden md:block opacity-0 pointer-events-none select-none">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Spacer</label>
+                                        <input type="text" class="w-full rounded-lg border-slate-300 px-4 py-3 border text-base" disabled>
+                                    </div>
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
+                                        <input type="text" id="recipientStreet" name="recipientStreet" required placeholder="456 Elm Ave" onkeyup="handleAutocomplete(this, 'recipient')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                        <div id="recipient-suggestions" class="absolute left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg mt-1 hidden shadow-lg text-xs overflow-hidden max-h-48 scroll-py-1"></div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
+                                        <input type="text" id="recipientCity" name="recipientCity" required placeholder="Los Angeles" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
+                                            <input type="text" id="recipientState" name="recipientState" required placeholder="CA" maxlength="2" onchange="validateZipCrossMatch('recipient')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base uppercase bg-white">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">Zip <span class="text-red-500">*</span></label>
+                                            <input type="text" id="recipientZip" name="recipientZip" required placeholder="90001" onchange="validateZipCrossMatch('recipient')" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-3 border text-base bg-white">
+                                        </div>
+                                    </div>
+                                    <p id="recipient-zip-warning" class="text-xs text-amber-600 font-medium hidden bg-amber-50 p-2 rounded border border-amber-200"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Configuration & Step 3 Wrapper (Initially Faded) -->
+                        <div id="step-3-section" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 transition-all duration-300 opacity-50 pointer-events-none relative">
+                            <!-- Step 3 Guard Block Overlay -->
+                            <div id="step-3-guard" class="absolute inset-0 bg-slate-50/10 z-30 rounded-xl cursor-not-allowed"></div>
+
+                            <h3 class="font-header font-bold text-lg mb-4 flex items-center gap-2">
+                                <span class="bg-brand-100 text-brand-800 text-xs px-2 py-1 rounded">Step 3</span> Print & Mail Options
+                            </h3>
+
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <!-- Print Settings -->
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-3">Print Color</label>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <label class="cursor-pointer relative">
+                                                <input type="radio" name="printType" value="bw" checked class="peer sr-only" onchange="window.calculateTotal()">
+                                                <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
+                                                    <i class="fa-solid fa-file-lines mb-1 block"></i>
+                                                    <span class="text-sm font-semibold">Black & White</span>
+                                                    <span class="block text-xs text-slate-500">$0.30/page</span>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer relative">
+                                                <input type="radio" name="printType" value="color" class="peer sr-only" onchange="window.calculateTotal()">
+                                                <div class="p-3 border rounded-lg hover:bg-slate-50 peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 transition-all text-center">
+                                                    <i class="fa-solid fa-palette mb-1 block text-pink-500"></i>
+                                                    <span class="text-sm font-semibold">Full Color</span>
+                                                    <span class="block text-xs text-slate-500">$0.85/page</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Paper Size & Specifications</label>
+                                        <div class="flex items-center gap-3 p-3.5 border rounded-lg bg-slate-50 border-slate-200">
+                                            <div class="text-slate-500 bg-white border rounded p-1.5 flex items-center justify-center">
+                                                <i class="fa-solid fa-file-invoice text-lg text-slate-600"></i>
+                                            </div>
+                                            <div>
+                                                <span class="text-sm font-semibold text-slate-900 block">Letter Size (8.5" x 11")</span>
+                                                <span class="block text-xs text-slate-500">Standard business-grade 20lb white paper</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Shipping Choices -->
+                                <div class="space-y-3">
+                                    <label class="block text-sm font-medium text-slate-700">Shipping Method</label>
+                                    
+                                    <!-- Economy -->
+                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer bg-white border-slate-200 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50/50 transition-all">
+                                        <input type="radio" name="mailType" value="economy" checked class="mt-1 mr-3 accent-brand-800" onchange="window.calculateTotal()">
+                                        <div class="text-xs">
+                                            <span class="block font-semibold text-slate-900 text-sm">Economy Tier</span>
+                                            <span class="text-slate-500">USPS First Class, no tracking</span>
+                                            <span class="block text-[10px] text-brand-700 font-medium mt-0.5" id="date-economy">Est. Arrival: ...</span>
+                                        </div>
+                                        <span class="ml-auto font-bold text-sm text-slate-900">$4.00</span>
+                                    </label>
+
+                                    <!-- Priority + Tracking -->
+                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer bg-white border-slate-200 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50/50 transition-all">
+                                        <input type="radio" name="mailType" value="standard" class="mt-1 mr-3 accent-brand-800" onchange="window.calculateTotal()">
+                                        <div class="text-xs">
+                                            <span class="block font-semibold text-slate-900 text-sm">Priority + Tracking</span>
+                                            <span class="text-slate-500">USPS Priority Mail (Tracking included)</span>
+                                            <span class="block text-[10px] text-brand-700 font-medium mt-0.5" id="date-standard">Est. Arrival: ...</span>
+                                        </div>
+                                        <span class="ml-auto font-bold text-sm text-slate-900">$17.00</span>
+                                    </label>
+
+                                    <!-- Certified + Signature -->
+                                    <label class="flex items-start p-3 border rounded-lg cursor-pointer bg-white border-slate-200 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50/50 transition-all">
+                                        <input type="radio" name="mailType" value="certified" class="mt-1 mr-3 accent-brand-800" onchange="window.calculateTotal()">
+                                        <div class="text-xs">
+                                            <span class="block font-semibold text-slate-900 text-sm">Certified + Signature</span>
+                                            <span class="text-slate-500">USPS Certified + Electronic Return Receipt (Signature PDF)</span>
+                                            <span class="block text-[10px] text-brand-700 font-medium mt-0.5" id="date-certified">Est. Arrival: ...</span>
+                                        </div>
+                                        <span class="ml-auto font-bold text-sm text-slate-900">$21.00</span>
+                                    </label>
+
+                                    <p id="envelope-warning" class="text-[11px] text-amber-600 mt-2 hidden leading-relaxed">
+                                        <i class="fa-solid fa-circle-info"></i> Flat rate envelope limit is 10 sheets. With Economy, an overweight surcharge of $2.50 applies.
+                                    </p>
+                                </div>
                             </div>
 
-                            <!-- Shipping Choices -->
-                            <div class="space-y-3">
-                                <label class="block text-sm font-medium text-slate-700">Shipping Method</label>
-                                
-                                <!-- Economy -->
-                                <label class="flex items-start p-3 border rounded-lg cursor-pointer bg-white border-slate-200 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50/50 transition-all">
-                                    <input type="radio" name="mailType" value="economy" checked class="mt-1 mr-3 accent-brand-800" onchange="window.calculateTotal()">
-                                    <div class="text-xs">
-                                        <span class="block font-semibold text-slate-900 text-sm">Economy Tier</span>
-                                        <span class="text-slate-500">USPS First Class, no tracking</span>
-                                        <span class="block text-[10px] text-brand-700 font-medium mt-0.5" id="date-economy">Est. Arrival: ...</span>
-                                    </div>
-                                    <span class="ml-auto font-bold text-sm text-slate-900">$4.00</span>
-                                </label>
-
-                                <!-- Priority + Tracking -->
-                                <label class="flex items-start p-3 border rounded-lg cursor-pointer bg-white border-slate-200 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50/50 transition-all">
-                                    <input type="radio" name="mailType" value="standard" class="mt-1 mr-3 accent-brand-800" onchange="window.calculateTotal()">
-                                    <div class="text-xs">
-                                        <span class="block font-semibold text-slate-900 text-sm">Priority + Tracking</span>
-                                        <span class="text-slate-500">USPS Priority Mail (Tracking included)</span>
-                                        <span class="block text-[10px] text-brand-700 font-medium mt-0.5" id="date-standard">Est. Arrival: ...</span>
-                                    </div>
-                                    <span class="ml-auto font-bold text-sm text-slate-900">$17.00</span>
-                                </label>
-
-                                <!-- Certified + Signature -->
-                                <label class="flex items-start p-3 border rounded-lg cursor-pointer bg-white border-slate-200 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50/50 transition-all">
-                                    <input type="radio" name="mailType" value="certified" class="mt-1 mr-3 accent-brand-800" onchange="window.calculateTotal()">
-                                    <div class="text-xs">
-                                        <span class="block font-semibold text-slate-900 text-sm">Certified + Signature</span>
-                                        <span class="text-slate-500">USPS Certified + Electronic Return Receipt (Signature PDF)</span>
-                                        <span class="block text-[10px] text-brand-700 font-medium mt-0.5" id="date-certified">Est. Arrival: ...</span>
-                                    </div>
-                                    <span class="ml-auto font-bold text-sm text-slate-900">$21.00</span>
-                                </label>
-
-                                <p id="envelope-warning" class="text-[11px] text-amber-600 mt-2 hidden leading-relaxed">
-                                    <i class="fa-solid fa-circle-info"></i> Flat rate envelope limit is 10 sheets. With Economy, an overweight surcharge of $2.50 applies.
-                                </p>
+                            <!-- Operational Notice -->
+                            <div class="mt-6 pt-6 border-t border-slate-100 flex items-start gap-3">
+                                <i class="fa-solid fa-circle-info text-brand-600 mt-1"></i>
+                                <p class="text-sm text-slate-600">Orders submitted before <span class="font-bold text-slate-900">2:00 PM EST</span> are processed the same business day.</p>
                             </div>
-                        </div>
-
-                        <!-- Operational Notice -->
-                        <div class="mt-6 pt-6 border-t border-slate-100 flex items-start gap-3">
-                            <i class="fa-solid fa-circle-info text-brand-600 mt-1"></i>
-                            <p class="text-sm text-slate-600">Orders submitted before <span class="font-bold text-slate-900">2:00 PM EST</span> are processed the same business day.</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Right Column: Sticky Summary -->
-                <div class="lg:col-span-1">
-                    <div class="sticky top-24">
-                        <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-                            <div class="bg-brand-800 px-6 py-4 flex justify-between items-center">
-                                <h3 class="text-white font-header font-bold text-lg">Checkout</h3>
-                                <div class="bg-white/20 px-2 py-1 rounded text-white text-[10px] font-bold tracking-wider backdrop-blur-sm">
-                                    SECURE
+                    <!-- Right Column: Sticky Summary -->
+                    <div class="lg:col-span-1">
+                        <div class="sticky top-24">
+                            <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+                                <div class="bg-brand-800 px-6 py-4 flex justify-between items-center">
+                                    <h3 class="text-white font-header font-bold text-lg">Checkout</h3>
+                                    <div class="bg-white/20 px-2 py-1 rounded text-white text-[10px] font-bold tracking-wider backdrop-blur-sm">
+                                        SECURE
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="p-6 space-y-4">
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-slate-600">Pages (<span id="summary-page-count">0</span>)</span>
-                                    <span class="font-medium text-slate-900" id="summary-print-cost">$0.00</span>
-                                </div>
-                                
-                                <div class="flex justify-between text-sm hidden text-amber-700 bg-amber-50 -mx-6 px-6 py-2 border-y border-amber-100" id="summary-overweight-row">
-                                    <span>Over 10 Pages Surcharge</span>
-                                    <span class="font-medium" id="summary-overweight-cost">$2.50</span>
-                                </div>
-                                
-                                <div class="flex justify-between text-sm hidden text-amber-700 bg-amber-50 -mx-6 px-6 py-2 border-y border-amber-100" id="summary-large-order-row">
-                                    <span>Large Order Fee (&gt;100 pgs)</span>
-                                    <span class="font-medium" id="summary-large-order-cost">$5.00</span>
-                                </div>
-
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-slate-600">Fulfillment Service Fee</span>
-                                    <span class="font-medium text-slate-900">$1.50</span>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-slate-600">Shipping Fees</span>
-                                    <span class="font-medium text-slate-900" id="summary-shipping-cost">$4.00</span>
-                                </div>
-                                
-                                <div class="pt-4 border-t border-slate-100 mt-4">
-                                    <div class="flex justify-between items-end">
-                                        <span class="text-slate-600 font-medium">Total Due</span>
-                                        <span class="text-3xl font-bold text-slate-900" id="final-total">$0.00</span>
+                                <div class="p-6 space-y-4">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Pages (<span id="summary-page-count">0</span>)</span>
+                                        <span class="font-medium text-slate-900" id="summary-print-cost">$0.00</span>
                                     </div>
                                     
-                                    <!-- Stripe Trust Badge Grid -->
-                                    <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col items-center justify-center">
-                                        <div class="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mb-1">
-                                            <i class="fa-solid fa-lock text-green-500"></i> Secured by <i class="fa-brands fa-stripe text-indigo-500 font-bold text-sm ml-0.5"></i>
-                                        </div>
-                                        <p class="text-[10px] text-slate-400 text-center">Encrypted 256-bit bank-grade PCI compliance</p>
+                                    <div class="flex justify-between text-sm hidden text-amber-700 bg-amber-50 -mx-6 px-6 py-2 border-y border-amber-100" id="summary-overweight-row">
+                                        <span>Over 10 Pages Surcharge</span>
+                                        <span class="font-medium" id="summary-overweight-cost">$2.50</span>
                                     </div>
-                                </div>
+                                    
+                                    <div class="flex justify-between text-sm hidden text-amber-700 bg-amber-50 -mx-6 px-6 py-2 border-y border-amber-100" id="summary-large-order-row">
+                                        <span>Large Order Fee (&gt;100 pgs)</span>
+                                        <span class="font-medium" id="summary-large-order-cost">$5.00</span>
+                                    </div>
 
-                                <button type="submit" id="submit-btn" class="w-full bg-brand-800 hover:bg-brand-900 text-white font-bold py-4 rounded-lg shadow-lg shadow-brand-800/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <span>Proceed to Payment</span>
-                                    <i class="fa-solid fa-arrow-right text-xs"></i>
-                                </button>
-                                
-                                <p class="text-xs text-center text-slate-500 mt-3 border-t border-slate-100 pt-3">
-                                    <i class="fa-solid fa-shield-cat text-brand-600"></i> 100% Delivery Guarantee. If USPS loses it, we reprint & resend for free.
-                                </p>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Fulfillment Service Fee</span>
+                                        <span class="font-medium text-slate-900">$1.50</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Shipping Fees</span>
+                                        <span class="font-medium text-slate-900" id="summary-shipping-cost">$4.00</span>
+                                    </div>
+                                    
+                                    <div class="pt-4 border-t border-slate-100 mt-4">
+                                        <div class="flex justify-between items-end">
+                                            <span class="text-slate-600 font-medium">Total Due</span>
+                                            <span class="text-3xl font-bold text-slate-900" id="final-total">$0.00</span>
+                                        </div>
+                                        
+                                        <!-- Stripe Trust Badge Grid -->
+                                        <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col items-center justify-center">
+                                            <div class="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mb-1">
+                                                <i class="fa-solid fa-lock text-green-500"></i> Secured by <i class="fa-brands fa-stripe text-indigo-500 font-bold text-sm ml-0.5"></i>
+                                            </div>
+                                            <p class="text-[10px] text-slate-400 text-center">Encrypted 256-bit bank-grade PCI compliance</p>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" id="submit-btn" class="w-full bg-brand-800 hover:bg-brand-900 text-white font-bold py-4 rounded-lg shadow-lg shadow-brand-800/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span>Proceed to Payment</span>
+                                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                                    </button>
+                                    
+                                    <p class="text-xs text-center text-slate-500 mt-3 border-t border-slate-100 pt-3">
+                                        <i class="fa-solid fa-shield-cat text-brand-600"></i> 100% Delivery Guarantee. If USPS loses it, we reprint & resend for free.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </form>
+
+                <div id="loading-overlay" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
+                     <div class="loader mb-4"></div>
+                     <h3 class="text-xl font-bold text-slate-900">Redirecting to Stripe Checkout...</h3>
+                     <p class="text-slate-500 mt-2 text-sm">Setting up secure token authorization</p>
                 </div>
-            </form>
 
-            <div id="loading-overlay" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
-                 <div class="loader mb-4"></div>
-                 <h3 class="text-xl font-bold text-slate-900">Redirecting to Stripe Checkout...</h3>
-                 <p class="text-slate-500 mt-2 text-sm">Setting up secure token authorization</p>
             </div>
+        </section>
+    </div>
 
-        </div>
-    </section>
+    <!-- SPA VIEW 2: TEMPLATE CATALOG LIBRARY -->
+    <div id="page-templates" class="spa-page">
+        <section class="pt-32 pb-20 bg-slate-50 border-b border-slate-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <nav class="flex justify-center space-x-2 text-xs text-slate-500 mb-4" aria-label="Breadcrumb">
+                    <span class="hover:text-slate-800 cursor-pointer" onclick="navigateTo('home')">Home</span>
+                    <span>/</span>
+                    <span class="text-slate-800 font-medium">Templates</span>
+                </nav>
+                <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">Free Professional Letter Templates</h1>
+                <p class="text-lg text-slate-600 max-w-2xl mx-auto font-light">
+                    Select a template, customize it directly in your browser, and instantly print and mail it. No accounts required.
+                </p>
+
+                <!-- Search and Categories Container -->
+                <div class="mt-8 max-w-xl mx-auto relative">
+                    <div class="relative">
+                        <input type="text" id="catalog-search" oninput="filterTemplates()" placeholder="Search templates (e.g. eviction, lease renewal, resignation)..." class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600 text-sm shadow-sm">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Categories and Catalog Content Grid -->
+        <section class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <!-- Left Column: Category Filter Sidebar -->
+                    <aside class="w-full lg:w-64 flex-shrink-0">
+                        <div class="sticky top-28 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                            <h3 class="font-header font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-list text-brand-800"></i>
+                                <span>Categories</span>
+                            </h3>
+                            <nav class="space-y-1" id="category-filter-list">
+                                <!-- Dynamic JS Population -->
+                            </nav>
+                        </div>
+                    </aside>
+
+                    <!-- Right Column: Grid Catalog Cards -->
+                    <main class="flex-1">
+                        <!-- Dynamic Status/Counter Row -->
+                        <div class="flex justify-between items-center mb-6 text-sm text-slate-500">
+                            <span id="templates-count-feedback">Showing all templates</span>
+                            <div class="flex items-center gap-1.5 cursor-pointer hover:text-brand-800" onclick="resetCatalogFilters()">
+                                <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
+                                <span class="font-medium">Reset Filters</span>
+                            </div>
+                        </div>
+
+                        <!-- Grid -->
+                        <div class="grid sm:grid-cols-2 gap-6" id="templates-catalog-grid">
+                            <!-- Dynamic cards population -->
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- SPA VIEW 3: TEMPLATE EDITING & GENERATION INTERFACE -->
+    <div id="page-editor" class="spa-page">
+        <!-- Editor Header Area -->
+        <section class="pt-32 pb-10 bg-slate-50 border-b border-slate-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Navigation Breadcrumbs -->
+                <nav class="flex space-x-2 text-xs text-slate-500 mb-4" aria-label="Breadcrumb">
+                    <span class="hover:text-slate-800 cursor-pointer" onclick="navigateTo('home')">Home</span>
+                    <span>/</span>
+                    <span class="hover:text-slate-800 cursor-pointer" onclick="navigateTo('templates')">Templates</span>
+                    <span>/</span>
+                    <span id="editor-crumb-category" class="hover:text-slate-800 cursor-pointer">Category</span>
+                    <span>/</span>
+                    <span id="editor-crumb-title" class="text-slate-800 font-medium">Document Editor</span>
+                </nav>
+
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div>
+                        <h1 id="editor-page-h1" class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Lease Renewal Letter Editor</h1>
+                        <p id="editor-page-desc" class="text-sm text-slate-600 mt-1 max-w-2xl font-light">Fill out the variable parameters on the left to live-edit your custom document. Download or immediately dispatch with PrintPostGo.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="navigateTo('templates')" class="bg-white border border-slate-200 hover:border-slate-300 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-left"></i> Back to Templates
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Layout Grid Container -->
+        <section class="py-12 bg-slate-100/50 min-h-[70vh]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-12 gap-8 items-start">
+                    
+                    <!-- Form Input Parameters Panel -->
+                    <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                        <div class="border-b border-slate-100 pb-4 flex justify-between items-center">
+                            <h3 class="font-header font-bold text-lg text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-brand-800"></i> Fill Document Variables
+                            </h3>
+                            <button onclick="resetEditorPlaceholders()" class="text-xs text-slate-500 hover:text-red-500 transition-colors flex items-center gap-1">
+                                <i class="fa-solid fa-arrows-rotate"></i> Reset
+                            </button>
+                        </div>
+
+                        <!-- Variables Dynamic Form Fields Inject Point -->
+                        <div id="dynamic-editor-fields" class="space-y-4">
+                            <!-- Injected Dynamically based on Placeholders Schema -->
+                        </div>
+
+                        <!-- Direct Print & Mail CTA Container -->
+                        <div class="pt-6 border-t border-slate-100 space-y-3">
+                            <button onclick="triggerDirectCheckout()" class="w-full bg-brand-800 hover:bg-brand-900 text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-brand-800/20 hover:shadow-brand-800/30 transition-all flex items-center justify-center gap-2 text-base">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Print & Mail This Letter</span>
+                            </button>
+                            <p class="text-[11px] text-center text-slate-500">We'll automatically generate the PDF and load it into your secure cart.</p>
+                            
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <button onclick="triggerPDFDownload()" class="bg-white border border-slate-200 hover:border-brand-300 hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-3 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-download text-brand-800"></i> Download PDF
+                                </button>
+                                <button onclick="triggerClipboardCopy()" class="bg-white border border-slate-200 hover:border-brand-300 hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-3 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-copy text-brand-800"></i> Copy to Clipboard
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Sheet View Panel -->
+                    <div class="lg:col-span-7 flex flex-col items-center">
+                        <div class="w-full flex items-center justify-between mb-4 px-2 text-xs text-slate-500">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Live Document Preview</span>
+                            <span>US Letter Size (8.5" x 11")</span>
+                        </div>
+                        
+                        <!-- Realistic Paper sheet -->
+                        <div class="preview-paper-sheet overflow-hidden select-none" id="preview-paper-container">
+                            <div id="document-rendered-text" class="whitespace-pre-wrap text-slate-800 font-sans leading-relaxed text-sm">
+                                <!-- Dynamic variables live compiled injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Detailed Use Case & SEO Copy Area -->
+        <section class="py-16 bg-white border-t border-slate-100">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 prose prose-slate">
+                <h2 class="text-2xl font-bold text-slate-900 mb-4" id="seo-heading-usage">About This Template</h2>
+                <div id="seo-text-body" class="text-slate-600 text-sm leading-relaxed space-y-6">
+                    <!-- Dynamic details -->
+                </div>
+
+                <!-- Custom FAQ Inject Point -->
+                <div class="mt-12 pt-12 border-t border-slate-200">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6">Frequently Asked Questions</h3>
+                    <div id="seo-faq-accordion" class="space-y-4">
+                        <!-- Dynamic FAQ lists -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <!-- Mobile Sticky Footer Summary -->
     <div class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 md:hidden z-40 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
@@ -886,7 +1089,18 @@
     <!-- Fail-Safe Standard Script (PDF, Upload, Autocomplete, Calculations, & UI Drivers) -->
     <script>
         // Global variables state definition
-        window.state = { pageCount: 0, printType: 'bw', mailType: 'economy', file: null, hasUnembeddedFonts: false };
+        window.state = { 
+            pageCount: 0, 
+            printType: 'bw', 
+            mailType: 'economy', 
+            file: null, 
+            hasUnembeddedFonts: false,
+            // SPA Router Properties
+            currentCategoryFilter: 'all',
+            currentTemplateSlug: null,
+            placeholderValues: {}
+        };
+        
         window.PRICES = {
             bw: 0.30,
             color: 0.85,
@@ -912,7 +1126,6 @@
             let diff = targetEst - now;
 
             if (diff < 0) {
-                // Cutoff has passed for today, set to next day same time
                 targetEst.setDate(targetEst.getDate() + 1);
                 diff = targetEst - now;
             }
@@ -1035,7 +1248,6 @@
             const step3Guard = document.getElementById('step-3-guard');
 
             if (window.state.file) {
-                // Activate Step 2
                 step2Sec.classList.remove('opacity-50', 'pointer-events-none');
                 if (step2Guard) step2Guard.classList.add('hidden');
                 
@@ -1046,13 +1258,11 @@
                 step2Ind.className = "flex items-center gap-2 bg-slate-50 px-4 text-brand-800 font-semibold animate-pulse transition-colors duration-300";
                 step2Bub.className = "w-6 h-6 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-brand-800/10";
                 
-                // Active Step 3
                 step3Sec.classList.remove('opacity-50', 'pointer-events-none');
                 if (step3Guard) step3Guard.classList.add('hidden');
                 step3Ind.className = "flex items-center gap-2 bg-slate-50 pl-4 text-brand-800 transition-colors duration-300";
                 step3Bub.className = "w-6 h-6 rounded-full bg-brand-800 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-brand-800/10";
             } else {
-                // Rollback to Lock Step 2 & 3
                 step2Sec.classList.add('opacity-50', 'pointer-events-none');
                 if (step2Guard) step2Guard.classList.remove('hidden');
                 step3Sec.classList.add('opacity-50', 'pointer-events-none');
@@ -1268,7 +1478,6 @@
             document.getElementById('final-total').textContent = formatMoney(total);
             document.getElementById('mobile-total').textContent = formatMoney(total);
 
-            // Real-time mobile metadata updates
             const colorLabel = window.state.printType === 'bw' ? 'B&W' : 'Color';
             document.getElementById('mobile-summary-meta').textContent = `Checkout (${uploadedPages} ${uploadedPages === 1 ? 'Page' : 'Pages'}, ${colorLabel})`;
 
@@ -1344,7 +1553,6 @@
             window.calculateTotal();
             updateCountdownTicker();
 
-            // Hide autocomplete suggestion blocks on document clicks
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('#senderStreet')) {
                     document.getElementById('sender-suggestions').classList.add('hidden');
@@ -1380,6 +1588,508 @@
             fileInput.files = e.dataTransfer.files; 
             window.handleFileSelect(fileInput); 
         }, false);
+    </script>
+
+    <!-- Unified Template Engine State Store & SPA Routing Controllers -->
+    <script>
+        // High-Quality Dynamic Core Database containing Placeholders & SEO schemas
+        const categoriesData = [
+            { id: "all", name: "All Templates", icon: "fa-border-all" },
+            { id: "landlord", name: "Landlord & Tenant", icon: "fa-house-user" },
+            { id: "business", name: "Business & Legal", icon: "fa-briefcase" },
+            { id: "financial", name: "Financial & Debt", icon: "fa-file-invoice-dollar" },
+            { id: "personal", name: "Personal Letters", icon: "fa-user" }
+        ];
+
+        const templatesData = [
+            {
+                id: "lease-renewal-letter",
+                slug: "lease-renewal-letter",
+                title: "Lease Renewal Agreement Letter",
+                category: "landlord",
+                shortDesc: "Provide formal notice to renew an existing residential or commercial lease agreement with adjusted monthly rent.",
+                seoTitle: "Free Lease Renewal Letter Template | PDF Download & Mail",
+                metaDescription: "Create a professional Lease Renewal Letter in 60 seconds. Customize terms, download as PDF, or let PrintPostGo print and mail it for you.",
+                templateContent: `Date: {{Date}}
+
+Dear {{RecipientName}},
+
+This letter serves as formal notification regarding the upcoming expiration of your lease agreement for the property located at:
+{{PropertyAddress}}
+
+Your current lease agreement is scheduled to expire on {{ExpirationDate}}. We have valued having you as a tenant and would like to offer you a renewal of this lease for an additional term under the following adjusted parameters:
+
+1. Renewal Term: {{RenewalTerm}}
+2. Adjusted Monthly Rent: {{MonthlyRent}}
+3. Security Deposit: Carried over from the original agreement.
+
+Please review these terms. If you accept this offer, please sign and return this document to the sender at your earliest convenience to lock in these renewal rates.
+
+Sincerely,
+
+{{SenderName}}
+{{SenderAddress}}`,
+                placeholders: [
+                    { key: "Date", label: "Date of Letter", type: "date", default: new Date().toISOString().split('T')[0] },
+                    { key: "SenderName", label: "Landlord/Owner Name", type: "text", default: "Alice Jenkins" },
+                    { key: "SenderAddress", label: "Landlord Return Address", type: "text", default: "123 Landlord Way, Boston, MA 02110" },
+                    { key: "RecipientName", label: "Tenant Full Name", type: "text", default: "John Smith" },
+                    { key: "PropertyAddress", label: "Lease Property Address", type: "text", default: "456 Apartment Row, Apt 2B, Boston, MA 02110" },
+                    { key: "ExpirationDate", label: "Current Lease Expiration", type: "date", default: "2026-08-31" },
+                    { key: "RenewalTerm", label: "Renewal Term duration", type: "text", default: "12 Months" },
+                    { key: "MonthlyRent", label: "Proposed Monthly Rent ($)", type: "text", default: "$2,400" }
+                ],
+                howToUse: "Use this Lease Renewal Agreement Letter when you want to extend a lease agreement with an existing tenant. Giving formal written notice at least 60 days before expiration ensures compliance with local rental laws and sets clear rent change terms.",
+                faqs: [
+                    { q: "How many days in advance should I send a lease renewal notice?", a: "Typically, most state jurisdictions require landlord-written notice at least 30 to 60 days prior to the expiration of the current lease agreement." },
+                    { q: "Can a tenant negotiate renewal terms?", a: "Yes, both landlord and tenant can discuss and adjust parameters before fully executing and signing the document." }
+                ]
+            },
+            {
+                id: "demand-letter",
+                slug: "demand-letter",
+                title: "Formal Breach of Contract Demand Letter",
+                category: "business",
+                shortDesc: "A legal demand letter requesting compliance, resolution, or payment on a breached professional agreement.",
+                seoTitle: "Breach of Contract Demand Letter Template | Mail Locally",
+                metaDescription: "Send a certified legal breach of contract demand letter. Customize terms, generate high-DPI vector PDFs, and mail certified with electronic return receipts.",
+                templateContent: `Date: {{Date}}
+
+To: {{RecipientName}}
+Address: {{RecipientAddress}}
+
+RE: FORMAL DEMAND FOR COMPLIANCE AND RESOLUTION
+
+Dear {{RecipientName}},
+
+This document constitutes a formal Demand Letter pursuant to the agreement dated {{AgreementDate}} concerning the following matter:
+{{ContractSubject}}
+
+To date, you are in direct violation of the agreed terms due to:
+{{BreachDescription}}
+
+Unless this breach is fully cured or resolved within {{CurePeriod}} days of your receipt of this certified notice, we will be forced to pursue all available legal remedies to the fullest extent of the law, including seeking damages and attorney fees.
+
+Please remit the requested balance of {{AmountDue}} or contact our office immediately to resolve this matter amicably.
+
+Sincerely,
+
+{{SenderName}}
+{{SenderAddress}}`,
+                placeholders: [
+                    { key: "Date", label: "Letter Date", type: "date", default: new Date().toISOString().split('T')[0] },
+                    { key: "SenderName", label: "Your Name / Business", type: "text", default: "Apex Enterprises LLC" },
+                    { key: "SenderAddress", label: "Your Mailing Address", type: "text", default: "789 Corporate Blvd, Suite 100, New York, NY 10001" },
+                    { key: "RecipientName", label: "Recipient Name", type: "text", default: "Roger Davis" },
+                    { key: "RecipientAddress", label: "Recipient Mailing Address", type: "text", default: "456 Client Lane, Brooklyn, NY 11201" },
+                    { key: "AgreementDate", label: "Original Agreement Date", type: "date", default: "2025-11-15" },
+                    { key: "ContractSubject", label: "Subject of Contract", type: "text", default: "Software Development Services SLA" },
+                    { key: "BreachDescription", label: "Describe the Violation", type: "textarea", default: "Failure to deliver milestone 3 source code files and missing scheduled payment on invoice #104." },
+                    { key: "CurePeriod", label: "Days to resolve (e.g. 10)", type: "text", default: "10" },
+                    { key: "AmountDue", label: "Amount Due / Financial Claim", type: "text", default: "$5,400.00" }
+                ],
+                howToUse: "A formal demand letter is often the final precursor step before initiating a small claims or commercial lawsuit. Sending this via USPS Certified Mail provides critical legal proof of notice in subsequent court proceedings.",
+                faqs: [
+                    { q: "Is a demand letter legally binding?", a: "While it does not carry a judge's signature, it acts as standard evidence that a reasonable attempt was made to resolve the dispute before filing court documents." },
+                    { q: "Should I send this via Certified Mail?", a: "Absolutely. Using PrintPostGo's Certified + Signature tier ensures you receive a signature receipt verifying delivery." }
+                ]
+            },
+            {
+                id: "debt-validation-letter",
+                slug: "debt-validation-letter",
+                title: "FCRA Debt Validation Notice",
+                category: "financial",
+                shortDesc: "Request verification and proof from collection agencies under the Fair Debt Collection Practices Act (FDCPA).",
+                seoTitle: "FDCPA Debt Validation Letter Template | Send Certified Mail",
+                metaDescription: "Protect your credit profile. Send a legal debt validation letter directly to collection agencies. Fully compliant under FDCPA guidelines.",
+                templateContent: `Date: {{Date}}
+
+To: {{CollectionAgencyName}}
+Address: {{CollectionAgencyAddress}}
+
+RE: NOTICE OF DISPUTE AND REQUEST FOR VALIDATION OF DEBT
+
+To Whom It May Concern,
+
+I am writing to formally dispute the validity of the debt reference number {{AccountReference}} listed under my profile. This request is filed pursuant to the Fair Debt Collection Practices Act (FDCPA), 15 U.S.C. Section 1692g.
+
+Please provide my office with the following verification details:
+1. Complete verification of the balance claimed, including original contract papers.
+2. Direct proof that your agency is licensed to collect debt in my home state.
+3. Complete account history details including original creditor names.
+
+Until validation is supplied, you are legally instructed to cease reporting this disputed item to major credit reporting agencies.
+
+Sincerely,
+
+{{ConsumerName}}
+Address: {{ConsumerAddress}}`,
+                placeholders: [
+                    { key: "Date", label: "Letter Date", type: "date", default: new Date().toISOString().split('T')[0] },
+                    { key: "ConsumerName", label: "Your Full Name", type: "text", default: "David Miller" },
+                    { key: "ConsumerAddress", label: "Your Address", type: "text", default: "101 Pine Street, Austin, TX 78701" },
+                    { key: "CollectionAgencyName", label: "Collection Agency Name", type: "text", default: "Reliable Asset Recovery Inc" },
+                    { key: "CollectionAgencyAddress", label: "Agency Address", type: "text", default: "500 Recovery Way, Dallas, TX 75201" },
+                    { key: "AccountReference", label: "Disputed Account Number", type: "text", default: "ARR-994827" }
+                ],
+                howToUse: "The Fair Debt Collection Practices Act (FDCPA) gives consumers the legal right to challenge any collections account. You must mail this validation request within 30 days of first contact to enforce your legal validation rights.",
+                faqs: [
+                    { q: "Can agencies contact me after receiving this validation request?", a: "No. The collection agency must cease collection efforts and communications until they validate and provide adequate proof." },
+                    { q: "Does validation guarantee removal?", a: "If the agency cannot provide legal proof of ownership and purchase history, they are legally required to remove the entry from credit bureaus." }
+                ]
+            }
+        ];
+
+        // SPA Navigation Router
+        function navigateTo(pageId, dynamicSlug = null) {
+            document.querySelectorAll('.spa-page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                window.scrollTo(0, 0);
+
+                if (pageId === 'templates') {
+                    renderCategories();
+                    renderTemplatesCatalog();
+                } else if (pageId === 'editor' && dynamicSlug) {
+                    loadTemplateIntoEditor(dynamicSlug);
+                }
+            }
+        }
+
+        // Initialize Categories Filter List
+        function renderCategories() {
+            const listContainer = document.getElementById('category-filter-list');
+            if (!listContainer) return;
+
+            listContainer.innerHTML = '';
+            categoriesData.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.type = "button";
+                const isSelected = window.state.currentCategoryFilter === cat.id;
+                
+                btn.className = `w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
+                    isSelected 
+                    ? 'bg-brand-800 text-white shadow-sm' 
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`;
+                btn.onclick = () => {
+                    window.state.currentCategoryFilter = cat.id;
+                    renderCategories();
+                    renderTemplatesCatalog();
+                };
+
+                btn.innerHTML = `
+                    <i class="fa-solid ${cat.icon} text-sm"></i>
+                    <span>${cat.name}</span>
+                `;
+                listContainer.appendChild(btn);
+            });
+        }
+
+        // Render Cards into Catalog Grid
+        function renderTemplatesCatalog(query = '') {
+            const gridContainer = document.getElementById('templates-catalog-grid');
+            const counterLabel = document.getElementById('templates-count-feedback');
+            if (!gridContainer) return;
+
+            gridContainer.innerHTML = '';
+            const searchVal = document.getElementById('catalog-search')?.value.trim().toLowerCase() || '';
+
+            const filtered = templatesData.filter(tmpl => {
+                const matchesCategory = window.state.currentCategoryFilter === 'all' || tmpl.category === window.state.currentCategoryFilter;
+                const matchesSearch = tmpl.title.toLowerCase().includes(searchVal) || tmpl.shortDesc.toLowerCase().includes(searchVal);
+                return matchesCategory && matchesSearch;
+            });
+
+            counterLabel.textContent = `Showing ${filtered.length} of ${templatesData.length} templates`;
+
+            if (filtered.length === 0) {
+                gridContainer.innerHTML = `
+                    <div class="col-span-full py-12 text-center">
+                        <i class="fa-solid fa-folder-open text-slate-300 text-4xl mb-3"></i>
+                        <p class="text-slate-500 text-sm">No templates matched your filters. Try search keywords.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(tmpl => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between spotlight-group";
+                
+                const catObj = categoriesData.find(c => c.id === tmpl.category);
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="bg-blue-50 text-brand-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">${catObj ? catObj.name : 'Document'}</span>
+                            <span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                        </div>
+                        <h4 class="font-header font-bold text-lg text-slate-900 mb-2">${tmpl.title}</h4>
+                        <p class="text-slate-500 text-xs leading-relaxed">${tmpl.shortDesc}</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xs text-brand-800 font-semibold"><i class="fa-solid fa-file-pdf"></i> PDF Generator</span>
+                        <button onclick="navigateTo('editor', '${tmpl.slug}')" class="bg-slate-900 hover:bg-brand-800 text-white font-semibold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1">
+                            <span>Use Template</span> <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                `;
+                gridContainer.appendChild(card);
+            });
+        }
+
+        function resetCatalogFilters() {
+            window.state.currentCategoryFilter = 'all';
+            const s = document.getElementById('catalog-search');
+            if (s) s.value = '';
+            renderCategories();
+            renderTemplatesCatalog();
+        }
+
+        function filterTemplates() {
+            renderTemplatesCatalog();
+        }
+
+        // Render Form Variables for selected Letter
+        function loadTemplateIntoEditor(slug) {
+            const template = templatesData.find(t => t.slug === slug);
+            if (!template) return;
+
+            window.state.currentTemplateSlug = slug;
+            window.state.placeholderValues = {};
+
+            // Dynamic Crumb Updates
+            const catObj = categoriesData.find(c => c.id === template.category);
+            document.getElementById('editor-crumb-category').textContent = catObj ? catObj.name : 'General';
+            document.getElementById('editor-crumb-title').textContent = template.title;
+            document.getElementById('editor-page-h1').textContent = `${template.title} Editor`;
+            document.getElementById('editor-page-desc').textContent = template.shortDesc;
+
+            // Load place-holders mapping
+            const formFieldsContainer = document.getElementById('dynamic-editor-fields');
+            formFieldsContainer.innerHTML = '';
+
+            template.placeholders.forEach(field => {
+                window.state.placeholderValues[field.key] = field.default;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = "space-y-1.5";
+
+                const label = document.createElement('label');
+                label.className = "block text-xs font-semibold text-slate-700 uppercase tracking-wider";
+                label.textContent = field.label;
+
+                let input;
+                if (field.type === 'textarea') {
+                    input = document.createElement('textarea');
+                    input.rows = 3;
+                    input.className = "w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-xs p-2.5 border";
+                } else {
+                    input = document.createElement('input');
+                    input.type = field.type;
+                    input.className = "w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-xs p-2.5 border";
+                }
+
+                input.value = field.default;
+                input.oninput = function() {
+                    window.state.placeholderValues[field.key] = this.value;
+                    compileLiveTemplate();
+                };
+
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
+                formFieldsContainer.appendChild(wrapper);
+            });
+
+            // Set up SEO sections below
+            document.getElementById('seo-heading-usage').textContent = `When and How to Use the ${template.title}`;
+            document.getElementById('seo-text-body').innerHTML = `
+                <p class="font-medium text-slate-800">${template.howToUse}</p>
+                <h4 class="text-base font-bold text-slate-900 mt-6">Legal and Administrative Guidelines</h4>
+                <p>When drafting formal correspondence, ensuring accuracy of details like recipient full names and street addresses is critical. Avoid abbreviations where possible. In many disputes, establishing a verifiable sequence of events and notices acts as primary evidence.</p>
+                <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl text-amber-800 text-xs my-4">
+                    <strong class="block mb-1">Disclaimer Notice:</strong> PrintPostGo provides document generation and fulfillment systems. We do not act as licensed legal counsel. Please consult local jurisdictions to confirm specific compliance regulations.
+                </div>
+            `;
+
+            // FAQ accordion populate
+            const faqContainer = document.getElementById('seo-faq-accordion');
+            faqContainer.innerHTML = '';
+            template.faqs.forEach(faq => {
+                const item = document.createElement('div');
+                item.className = "border border-slate-200 rounded-xl bg-slate-50/50 overflow-hidden";
+                item.innerHTML = `
+                    <div class="px-5 py-4 font-bold text-sm text-slate-900 border-b border-slate-100 flex justify-between items-center bg-white">
+                        <span>${faq.q}</span>
+                        <i class="fa-solid fa-circle-question text-slate-400"></i>
+                    </div>
+                    <div class="px-5 py-4 text-xs text-slate-600 leading-relaxed">
+                        ${faq.a}
+                    </div>
+                `;
+                faqContainer.appendChild(item);
+            });
+
+            compileLiveTemplate();
+        }
+
+        // Inject dynamic parameters into document template preview
+        function compileLiveTemplate() {
+            const template = templatesData.find(t => t.slug === window.state.currentTemplateSlug);
+            if (!template) return;
+
+            let text = template.templateContent;
+            for (const key in window.state.placeholderValues) {
+                const value = window.state.placeholderValues[key] || `[${key}]`;
+                text = text.replace(new RegExp(`{{${key}}}`, 'g'), value);
+            }
+
+            document.getElementById('document-rendered-text').textContent = text;
+        }
+
+        function resetEditorPlaceholders() {
+            if (window.state.currentTemplateSlug) {
+                loadTemplateIntoEditor(window.state.currentTemplateSlug);
+            }
+        }
+
+        // Render/Compile vector text onto standard Letter format via jsPDF
+        function compilePDFDocInstance() {
+            const { jsPDF } = window.jspdf;
+            
+            // Standard US Letter dimensions (8.5 x 11 inches)
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'in',
+                format: 'letter'
+            });
+
+            const template = templatesData.find(t => t.slug === window.state.currentTemplateSlug);
+            if (!template) return null;
+
+            let fullText = template.templateContent;
+            for (const key in window.state.placeholderValues) {
+                const value = window.state.placeholderValues[key] || `[${key}]`;
+                fullText = fullText.replace(new RegExp(`{{${key}}}`, 'g'), value);
+            }
+
+            // Set document standard fonts & margin parameters
+            doc.setFont('Helvetica', 'normal');
+            doc.setFontSize(11);
+            
+            const margins = { top: 1.0, bottom: 1.0, left: 1.0, right: 1.0 };
+            const printableWidth = 8.5 - margins.left - margins.right;
+
+            // Simple line-split wrapping helper for formatting output
+            const lines = doc.splitTextToSize(fullText, printableWidth);
+            
+            let yCursor = margins.top;
+            lines.forEach(line => {
+                // Ensure page break parameters are validated
+                if (yCursor > (11.0 - margins.bottom)) {
+                    doc.addPage();
+                    yCursor = margins.top;
+                }
+                doc.text(line, margins.left, yCursor);
+                yCursor += 0.22; // Proportional 1.6x linespace
+            });
+
+            return doc;
+        }
+
+        // Direct Download Action Trigger
+        function triggerPDFDownload() {
+            const doc = compilePDFDocInstance();
+            if (!doc) return;
+            doc.save(`${window.state.currentTemplateSlug}.pdf`);
+            window.showAlert("Success", "Your high-fidelity vector PDF is generated and downloaded.", "success");
+        }
+
+        // Clipboard text copying helper
+        function triggerClipboardCopy() {
+            const textContent = document.getElementById('document-rendered-text').textContent;
+            
+            // Safe fallback method to avoid iFrame navigator blocks
+            const textarea = document.createElement('textarea');
+            textarea.value = textContent;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            window.showAlert("Copied", "Raw document text is copied to your clipboard.", "success");
+        }
+
+        // AUTOMATED CHECKOUT PIPELINE INTEGRATION: Passes locally synthesized PDF directly to Stripe Workflow
+        function triggerDirectCheckout() {
+            const doc = compilePDFDocInstance();
+            if (!doc) return;
+
+            const pdfBlob = doc.output('blob');
+            const fileName = `${window.state.currentTemplateSlug}.pdf`;
+            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+            // Pipeline Step 1: Pre-populate the raw HTML file inputs array
+            const dt = new DataTransfer();
+            dt.items.add(pdfFile);
+            
+            const fileInput = document.getElementById('file-upload');
+            if (fileInput) {
+                fileInput.files = dt.files;
+                
+                // Pipeline Step 2: Trigger standard validation & processing mechanics
+                window.handleFileSelect(fileInput);
+
+                // Pipeline Step 3: Populate Sender / Recipient Address forms automatically based on placeholder values
+                const sendName = window.state.placeholderValues["SenderName"] || '';
+                const sendAddr = window.state.placeholderValues["SenderAddress"] || '';
+                const recName = window.state.placeholderValues["RecipientName"] || '';
+                const recAddr = window.state.placeholderValues["RecipientAddress"] || '';
+
+                if (sendName) document.getElementById('senderName').value = sendName;
+                if (recName) document.getElementById('recipientName').value = recName;
+
+                // Process basic addresses to extract City/State/Zip
+                if (sendAddr) parseAddressToForm(sendAddr, 'sender');
+                if (recAddr) parseAddressToForm(recAddr, 'recipient');
+
+                // Pipeline Step 4: Re-route the active state to homepage view and focus step cards
+                navigateTo('home');
+
+                // Scroll to configure block seamlessly
+                setTimeout(() => {
+                    gsap.to(window, {
+                        duration: 1.2,
+                        scrollTo: { y: "#start-order", offsetY: 80 },
+                        ease: "power3.inOut"
+                    });
+                    window.showAlert("Template Loaded!", "Your synthesized letter PDF has been securely loaded and configured into the checkout queue.", "success");
+                }, 200);
+            }
+        }
+
+        // Basic parser helper for addresses (e.g. "123 Main St, New York, NY 10001")
+        function parseAddressToForm(addressStr, prefix) {
+            const parts = addressStr.split(',');
+            if (parts.length >= 3) {
+                document.getElementById(`${prefix}Street`).value = parts[0].trim();
+                document.getElementById(`${prefix}City`).value = parts[1].trim();
+                
+                const stateZipParts = parts[2].trim().split(' ');
+                if (stateZipParts.length >= 2) {
+                    document.getElementById(`${prefix}State`).value = stateZipParts[0].trim();
+                    document.getElementById(`${prefix}Zip`).value = stateZipParts[1].trim();
+                }
+            } else {
+                // Safe default fallback
+                document.getElementById(`${prefix}Street`).value = addressStr;
+            }
+        }
     </script>
 
     <!-- Isolated Firebase Module Script (Only invoked on Submit) -->
