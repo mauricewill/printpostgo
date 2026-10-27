@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmed - PrintPostGo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fa-solid fa-check text-green-600 text-3xl"></i>
+            </div>
+            
+            <h1 class="text-3xl font-bold text-slate-900 mb-3">Order Confirmed!</h1>
+            <p class="text-slate-600 mb-6">
+                Your payment was successful. We've received your order and will begin processing it shortly.
+            </p>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+                <p class="text-sm text-blue-900 mb-2">
+                    <i class="fa-solid fa-envelope mr-2"></i>
+                    <strong>Check your email</strong>
+                </p>
+                <p class="text-sm text-blue-700">
+                    We've sent a confirmation to your email address with your order details.
+                </p>
+            </div>
+            
+            <div class="space-y-3 text-sm text-slate-600 mb-8">
+                <div class="flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print text-blue-600"></i>
+                    <span>Your document will be printed</span>
+                </div>
+                <div class="flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-envelope text-blue-600"></i>
+                    <span>Prepared for mailing</span>
+                </div>
+                <div class="flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-truck text-blue-600"></i>
+                    <span>Shipped via USPS</span>
+                </div>
+            </div>
+            
+            <a href="/" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                Return to Home
+            </a>
+            
+            <p class="text-xs text-slate-500 mt-6" id="session-id"></p>
+        </div>
+    </div>
+    
+    <script>
+        // Display session ID from URL if available
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+        if (sessionId) {
+            document.getElementById('session-id').textContent = `Order ID: ${sessionId}`;
+        }
+    </script>
+</body>
+</html>
